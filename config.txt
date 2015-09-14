@@ -1,0 +1,2 @@
+author:run 'comet set-author NAME' to change this setting.
+comment-width:80

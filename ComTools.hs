@@ -241,6 +241,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
               | suf == ".sass"   = SASS
               | suf == ".scss"   = SCSS
               | suf == ".xml"    = XML
+              | otherwise        = error $ suf ++ " files are not supported at this time."
               where suf = getFileSuffix f
 
 

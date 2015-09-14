@@ -1,7 +1,7 @@
 {-
 	Main file for 'comet', this is where everything is accessed from.
 	
-	Author(s):     Alicia
+	Author(s):     Lewis Deane
 	Last Modified: 14/9/2015
 -}
 

@@ -8,11 +8,6 @@
 
 module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
-    -- TODO
-
-    -- Add comment characters for remaining languages.
-
-
     -- Imports
     import System.IO
     import Control.Applicative
@@ -25,7 +20,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     import Config as C
 
     -- Data type composed of the supported languages.
-    data Lang = C | CPP | CSharp | CoffeeScript | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
+    data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
     
     -- Type synoyms to make the code more readable.
     type FileName = String
@@ -170,39 +165,41 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
       b <- getCommentBlock c l
       (return . drop (length b)) c
 
+
     -- Gets the string relating to the start of a block comment for the supported languages.
     getBlockStart :: Lang -> String
 
-    getBlockStart l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, Scala, SCSS, SASS] = "/*"
-                    | l `elem` [ERB, HTML, XML]                                               = "<!--"
-                    | l `elem` [Haskell]                                                      = "{-"
-                    | otherwise                                                               = getCommentChar l
+    getBlockStart l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = "/*"
+                    | l `elem` [ERB, HTML, XML]                                                    = "<!--"
+                    | l `elem` [Haskell]                                                           = "{-"
+                    | l `elem` [MatLab]                                                            = "%{"
+                    | otherwise                                                                    = getCommentChar l
 
 
     -- Gets the string relating to the end of a block comment for the supported languages.
     getBlockEnd :: Lang -> String
 
-    getBlockEnd l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, Scala, SCSS, SASS] = " */"
-                  | l `elem` [ERB, HTML, XML]                                               = "-->"
-                  | l `elem` [Haskell]                                                      = "-}"
-                  | otherwise                                                               = getCommentChar l
+    getBlockEnd l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " */"
+                  | l `elem` [ERB, HTML, XML]                                                    = "-->"
+                  | l `elem` [Haskell]                                                           = "-}"
+                  | l `elem` [MatLab]                                                            = "%}"
+                  | otherwise                                                                    = getCommentChar l
 
 
     -- Gets the string relating to the start of each comment line within a block comment.
     getCommentChar :: Lang -> String
 
-    getCommentChar l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, Scala, SCSS, SASS] = " * "
-                     | l `elem` [Python, Ruby]                                                 = "# "
-                     | l `elem` [HAML]                                                         = "-# "
-                     | l `elem` [ERB, HTML, XML]                                               = "\t"
-                     | l `elem` [Haskell]                                                      = "\t"
+    getCommentChar l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
+                     | l `elem` [CoffeeScript, Python, R, Ruby]                                     = "# "
+                     | l `elem` [HAML]                                                              = "-# "
+                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                   = "\t"
 
 
     -- Says which languages support block comments.
     hasBlockComments :: Lang -> Bool
 
-    hasBlockComments l | l `elem` [JavaScript, Java, Scala, CSS, SCSS, HTML, ERB, Haskell] = True
-                       | otherwise                                                         = False
+    hasBlockComments l | l `elem` [C, CPP, CSharp, CSS, ERB, Go, Haskell, HTML, MatLab, Java, JavaScript, PHP, Scala, SCSS, SASS, XML] = True
+                       | otherwise                                                                                                     = False
 
 
     -- Gets the author value from the config file.
@@ -224,6 +221,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
               | suf == ".h"      = C
               | suf == ".cpp"    = CPP
               | suf == ".coffee" = CoffeeScript
+              | suf == ".cs"     = CSharp
               | suf == ".css"    = CSS
               | suf == ".erb"    = ERB
               | suf == ".go"     = Go
@@ -234,6 +232,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
               | suf == ".xhtml"  = HTML
               | suf == ".java"   = Java
               | suf == ".js"     = JavaScript
+              | suf == ".matlab" = MatLab
               | suf == ".php"    = PHP
               | suf == ".py"     = Python
               | suf == ".r"      = R

@@ -9,13 +9,13 @@
 module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
     -- Imports
-    import System.IO
     import Control.Applicative
-    import System.Directory
     import Data.Char
-    import Data.Time.Clock
-    import Data.Time.Calendar
     import Data.List (elemIndex, elemIndices, isPrefixOf)
+    import Data.Time.Calendar
+    import Data.Time.Clock
+    import System.Directory
+    import System.IO
 
     import Config as C
 
@@ -25,6 +25,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     -- Type synoyms to make the code more readable.
     type FileName = String
     type Comment  = String
+    type Line     = String
 
     -- Sets a comment to the desired file.
     setComment :: FileName -> Comment -> IO ()
@@ -52,7 +53,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Writes a comment to a file, file is read beforehand in either setComment or appendComment.
-    writeComment :: String -> [String] -> Lang -> FileName -> IO ()
+    writeComment :: Comment -> [Line] -> Lang -> FileName -> IO ()
 
     writeComment s c l f = do
       d  <- getDate
@@ -106,7 +107,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Gets the comment from the lines from the file.
-    getComment :: [String] -> Lang -> IO String
+    getComment :: [Line] -> Lang -> IO Comment
 
     getComment c l = do
       a <- getCommentBlock c l
@@ -114,12 +115,12 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Gets a list of lines relating to the lines within the block comment.
-    getCommentBlock :: [String] -> Lang -> IO [String]
+    getCommentBlock :: [Line] -> Lang -> IO [Line]
 
     getCommentBlock c l = if hasBlockComments l then extract c l else extract' c l
 
 
-    getCommentFromBlock :: [String] -> Lang -> IO String
+    getCommentFromBlock :: [Line] -> Lang -> IO Comment
 
     getCommentFromBlock s l = do
       let a = map (drop (length $ getCommentChar l)) ((init . tail) s)
@@ -127,7 +128,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Extracts the comment block for languages with block comments.
-    extract :: [String] -> Lang -> IO [String]
+    extract :: [Line] -> Lang -> IO [Line]
 
     extract c l = do
       let k x = length (filter (`isPrefixOf` x) [getCommentChar l, getBlockStart l, getBlockEnd l]) > 0
@@ -135,7 +136,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Same as extract but handles languages that don't have block comments.
-    extract' :: [String] -> Lang -> IO [String]
+    extract' :: [Line] -> Lang -> IO [Line]
 
     extract' c l = do
       let k x = getCommentChar l `isPrefixOf` x
@@ -143,7 +144,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Takes a string and wraps the length according the the comment width setting.
-    splitInput :: Lang -> String -> IO String
+    splitInput :: Lang -> Comment -> IO String
 
     splitInput l c = do
       lim <- read <$> C.getValue "comment-width"
@@ -159,7 +160,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Removes the current comment section.
-    removeIfComment :: [String] -> Lang -> IO [String]
+    removeIfComment :: [Line] -> Lang -> IO [Line]
 
     removeIfComment c l = do
       b <- getCommentBlock c l
@@ -246,7 +247,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Gets the file ending from the file name.
-    getFileSuffix :: String -> String
+    getFileSuffix :: FileName -> String
 
     getFileSuffix str = map toLower $ drop (last $ elemIndices '.' str) str 
 
@@ -258,7 +259,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
 
     -- Comments a string in the style of the language.
-    comment :: Lang -> String -> String
+    comment :: Lang -> Comment -> String
 
     comment l s | s == ""   = getCommentChar l
                 | otherwise = c l s

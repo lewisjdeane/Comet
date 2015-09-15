@@ -5,15 +5,15 @@
 	Last Modified: 14/9/2015
 -}
 
-module Config (genConfig, genConfigWithInitial, getValue, configName, setValue) where
+module Config (getValue, configName, setValue) where
 
     -- Imports
-    import System.IO
     import Control.Applicative
-    import System.Directory
     import Data.List
     import Data.List.Split
     import Paths_comet
+    import System.Directory
+    import System.IO
 
     -- Some type synoyms to make types easier to read.
     type Key      = String
@@ -25,17 +25,6 @@ module Config (genConfig, genConfigWithInitial, getValue, configName, setValue) 
     configName :: FileName
 
     configName = "config.txt"
-    
-    -- Generates a new blank config file
-    genConfig :: IO ()
-
-    genConfig = writeFile configName ""
-
-
-    -- Generates a new config file with initial data
-    genConfigWithInitial :: (Key, Value) -> IO ()
-
-    genConfigWithInitial (k, v) = writeFile configName $ k ++ ":" ++ v
 
 
     -- Gets the value associated with a given key.

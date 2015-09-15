@@ -6,10 +6,11 @@
 -}
 
 -- Imports
-import System.IO
+import Control.Applicative
+import Data.List (isPrefixOf)
 import System.Environment
 import System.Directory
-import Data.List (isPrefixOf)
+import System.IO
 
 import Config as C
 import ComTools as T
@@ -55,9 +56,7 @@ configS k v = do
 -- Gets the current setting from config.
 configG :: String -> IO ()
 
-configG s = do
-	v <- C.getValue s
-	(putStrLn . prettyPrint) v
+configG k = if k `elem` settings then prettyPrint <$> C.getValue k >>= putStrLn else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
 
 
 -- Adds a new line before and after a string.
@@ -108,6 +107,7 @@ languages = zipWith3 (concat3) x (repeat "\t") y
 		              ("HTML         ", ".html .htm .xhtml"),
 		              ("Java         ", ".java"),
 		              ("JavaScript   ", ".js"),
+		              ("MatLab       ", ".matlab"),
 		              ("PHP          ", ".php"),
 		              ("Python       ", ".py"),
 		              ("R            ", ".r"),
@@ -127,4 +127,4 @@ concat3 x y z = x ++ y ++ z
 -- Returns the current version number.
 version :: IO ()
 
-version = putStrLn "v0.1"
+version = putStrLn "v0.2"

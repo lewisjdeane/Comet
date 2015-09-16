@@ -68,7 +68,7 @@ prettyPrint s = "\n" ++ s ++ "\n"
 -- What should be printed out when no args are passed to our inital command.
 doc :: IO ()
 
-doc = (putStrLn . unlines) (["", "Usage", ""] ++ commands ++ ["\n"] ++ languages ++ [""])
+doc = (putStrLn . unlines) $ ["", "Usage", ""] ++ commands ++ ["\n"] ++ languages ++ [""]
 
 
 -- List of commands to be outputted when 'comet' is run.
@@ -127,4 +127,4 @@ concat3 x y z = x ++ y ++ z
 -- Returns the current version number.
 version :: IO ()
 
-version = putStrLn "v0.2"
+version = putStrLn "v0.2.1"

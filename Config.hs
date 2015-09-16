@@ -34,10 +34,12 @@ module Config (getValue, configName, setValue) where
         f <- getDataFileName "config.txt"
         c <- lines <$> readFile f
 
-        let v = values c
-            i = if f == Nothing then error "No such key!" else extract f where f = findIndex (== k) $ keys c
+        let func = b k
+            b k' y [] = y
+            b k' y x  = if (head . s) x == k' then (last . s) x else y
+            s = splitOn ":"
 
-        return $ v !! i
+        return $ foldl func "" c
 
 
     -- Sets the value of a key to a value.
@@ -47,29 +49,8 @@ module Config (getValue, configName, setValue) where
         f <- getDataFileName "config.txt"
         c <- lines <$> readFile f
 
-        let n = k ++ ":" ++ v
+        let func = b (k, v)
+            b (k', v') y [] = y
+            b (k', v') y x  = if (head . splitOn ":") x == k' then y ++ [k' ++ ":" ++ v'] else y ++ [x]
 
-        let p = if f == Nothing then n : c else take i c ++ [n] ++ drop (succ i) c
-                where i = extract f
-                      f = findIndex (== k) $ keys c
-
-        length c `seq` (writeFile f $ unlines p) -- We use this hack here because we want to write to the file after reading from it.
-
-
-    -- Turns a list of lines into a list of keys.
-    keys :: [Line] -> [Value]
-
-    keys = map (head . splitOn ":")
-
-
-    -- Turns a list of lines into a list of values.
-    values :: [Line] -> [Value]
-
-    values = map (last . splitOn ":")
-
-
-    -- Tries to extract value from maybe and if can't then throws error.
-    extract :: Maybe Int -> Int
-
-    extract (Just x) = x
-    extract _        = error "Not found."
+        length c `seq` ((writeFile f . unlines . foldl func []) c) -- We use this hack here because we want to write to the file after reading from it.

@@ -17,7 +17,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     import System.Directory
     import System.IO
 
-    import Config as C
+    import qualified Config as C
 
     -- Data type composed of the supported languages.
     data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
@@ -147,7 +147,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     splitInput :: Lang -> Comment -> IO String
 
     splitInput l c = do
-      lim <- read <$> C.getValue "comment-width"
+      lim <- read <$> C.readValue "comment-width"
       
       let lim' = lim - (length $ getCommentChar l)
           w = words c
@@ -206,7 +206,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     -- Gets the author value from the config file.
     getAuthor :: IO String
 
-    getAuthor = C.getValue "author"
+    getAuthor = C.readValue "author"
 
 
     -- Gets todays date in a formatted string.

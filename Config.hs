@@ -5,7 +5,7 @@
 	Last Modified: 14/9/2015
 -}
 
-module Config (getValue, configName, setValue) where
+module Config (configName, readValue, writeValue) where
 
     -- Imports
     import Control.Applicative
@@ -18,7 +18,6 @@ module Config (getValue, configName, setValue) where
     -- Some type synoyms to make types easier to read.
     type Key      = String
     type Value    = String
-    type Line     = String
     type FileName = String
 
     -- Name of our config file.
@@ -28,29 +27,30 @@ module Config (getValue, configName, setValue) where
 
 
     -- Gets the value associated with a given key.
-    getValue :: Key -> IO Value
+    readValue :: Key -> IO Value
 
-    getValue k = do
-        f <- getDataFileName "config.txt"
-        c <- lines <$> readFile f
+    readValue key = do
+        path     <- getDataFileName configName
+        contents <- lines <$> readFile path
 
-        let func = b k
-            b k' y [] = y
-            b k' y x  = if (head . s) x == k' then (last . s) x else y
+        let f = f' key
             s = splitOn ":"
+            f' k y [] = y
+            f' k y x  = if (head . s) x == k then (last . s) x else y
 
-        return $ foldl func "" c
+        return $ foldl f "" contents
 
 
     -- Sets the value of a key to a value.
-    setValue :: (Key, Value) -> IO ()
+    writeValue :: (Key, Value) -> IO ()
     
-    setValue (k, v) = do
-        f <- getDataFileName "config.txt"
-        c <- lines <$> readFile f
+    writeValue (key, value) = do
+        path     <- getDataFileName configName
+        contents <- lines <$> readFile path
 
-        let func = b (k, v)
-            b (k', v') y [] = y
-            b (k', v') y x  = if (head . splitOn ":") x == k' then y ++ [k' ++ ":" ++ v'] else y ++ [x]
+        let f = f' (key, value)
+            s = splitOn ":"
+            f' (k, v) x = if (head . s) x == k then k ++ ":" ++ v else x
+            c = map f contents
 
-        length c `seq` ((writeFile f . unlines . foldl func []) c) -- We use this hack here because we want to write to the file after reading from it.
+        length contents `seq` (writeFile path $ unlines c)

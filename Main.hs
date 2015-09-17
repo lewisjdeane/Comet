@@ -12,8 +12,8 @@ import System.Environment
 import System.Directory
 import System.IO
 
-import Config as C
-import ComTools as T
+import qualified Config as C
+import qualified ComTools as T
 
 -- Type synonyms for increased readability.
 type FileName = String
@@ -21,9 +21,7 @@ type Comment  = String
 
 
 -- Where everything begins.
-main = do
-  args <- getArgs
-  parse args
+main = getArgs >>= parse
 
 
 -- Allowable settings.
@@ -50,13 +48,13 @@ parse (x:xs) | x == "s" || x == "set"     = T.setComment (head xs) (last xs)
 configS :: String -> String -> IO ()
 
 configS k v = do
-  if k `elem` settings then C.setValue (k, v) else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
+  if k `elem` settings then C.writeValue (k, v) else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
 
 
 -- Gets the current setting from config.
 configG :: String -> IO ()
 
-configG k = if k `elem` settings then prettyPrint <$> C.getValue k >>= putStrLn else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
+configG k = if k `elem` settings then prettyPrint <$> C.readValue k >>= putStrLn else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
 
 
 -- Adds a new line before and after a string.

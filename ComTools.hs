@@ -151,10 +151,10 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
       
       let lim' = lim - (length $ getCommentChar l)
           w = words c
-          x = f [] w
-          f [] (x:xs)  = f [x] xs
-          f acc []     = acc
-          f acc (x:xs) = if (length . last) acc + length x < lim' then f (init acc ++ [(last acc ++ " " ++ x)]) xs else f (acc ++ [x]) xs
+          x = foldl f [] w
+          f [] x   = [x]
+          f acc [] = acc
+          f acc x  = if (length . last) acc + length x < lim' then init acc ++ [last acc ++ " " ++ x] else acc ++ [x]
 
       (return . unlines) x
 

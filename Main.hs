@@ -1,8 +1,9 @@
 {-
-	Main file for 'comet', this is where everything is accessed from.
+	Main file for 'comet', handles commands and provides documentation regarding
+	usage.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 14/9/2015
+	Last Modified: 17/9/2015
 -}
 
 -- Imports

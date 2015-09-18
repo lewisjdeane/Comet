@@ -2,7 +2,7 @@
 	Handles reading and writing to the config file.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 14/9/2015
+	Last Modified: 18/9/2015
 -}
 
 module Config (configName, readValue, writeValue) where
@@ -33,12 +33,10 @@ module Config (configName, readValue, writeValue) where
         path     <- getDataFileName configName
         contents <- lines <$> readFile path
 
-        let f = f' key
-            s = splitOn ":"
-            f' k y [] = y
-            f' k y x  = if (head . s) x == k then (last . s) x else y
+        let f = filter (key `isPrefixOf`) contents
+            v = (last . splitOn ":") $ head f
 
-        return $ foldl f "" contents
+        return v
 
 
     -- Sets the value of a key to a value.
@@ -48,9 +46,7 @@ module Config (configName, readValue, writeValue) where
         path     <- getDataFileName configName
         contents <- lines <$> readFile path
 
-        let f = f' (key, value)
-            s = splitOn ":"
-            f' (k, v) x = if (head . s) x == k then k ++ ":" ++ v else x
+        let f x = if key `isPrefixOf` x then key ++ ":" ++ value else x
             c = map f contents
 
         length contents `seq` (writeFile path $ unlines c)

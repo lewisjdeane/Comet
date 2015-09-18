@@ -1,9 +1,9 @@
 {-
-	Main file for 'comet', handles commands and provides documentation regarding
-	usage.
+	Main file for 'comet', handles commands and provides
+	documentation regarding usage.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 17/9/2015
+	Last Modified: 18/9/2015
 -}
 
 -- Imports
@@ -38,6 +38,7 @@ parse [] = doc
 parse (x:xs) | x == "s" || x == "set"     = T.setComment (head xs) (last xs)
              | x == "a" || x == "append"  = T.appendComment (head xs) (last xs)
              | x == "g" || x == "get"     = T.currentComment $ head xs
+             | x == "u" || x == "update"  = T.appendComment (head xs) ""
              | x == "d" || x == "delete"  = T.deleteComment $ head xs
              | x == "v" || x == "version" = version
              | "set-" `isPrefixOf` x      = configS (drop 4 x) (head xs)
@@ -77,13 +78,14 @@ commands = zipWith3 (concat3) x (repeat "\t") y
           where x = map fst c
                 y = map snd c
                 c = [("COMMAND                    ", "DESCRIPTION"),
-		             ("comet s|set file comment   ", "Write comment to file."),
-		             ("comet a|append file comment", "Append comment to file."),
-		             ("comet d|delete             ", "Delete comment from file."),
-		             ("comet g|get file           ", "Get comment from file."),
+		             ("comet s|set FILE COMMENT   ", "Write comment to file."),
+		             ("comet a|append FILE COMMENT", "Append comment to file."),
+		             ("comet d|delete FILE        ", "Delete comment from file."),
+		             ("comet g|get FILE           ", "Get comment from file."),
+		             ("comet u|update FILE        ", "Updates file with current settings."),
 		             ("comet v|version            ", "Get current version."),
-		             ("comet set-author name      ", "Set author to name."),
-		             ("comet set-comment-width num", "Set comment width to num."),
+		             ("comet set-author NAME      ", "Set author to name."),
+		             ("comet set-comment-width NUM", "Set comment width to num."),
 		             ("comet get-author           ", "Get author."),
 		             ("comet get-comment-width    ", "Get comment width.")]
 
@@ -126,4 +128,4 @@ concat3 x y z = x ++ y ++ z
 -- Returns the current version number.
 version :: IO ()
 
-version = putStrLn "v0.2.1"
+version = putStrLn "v0.3"

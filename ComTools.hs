@@ -1,9 +1,9 @@
 {-
-	Handles all the necessary functions relating to the commenting ability of the
-	app.
+	Handles all the necessary functions relating to the
+	commenting ability of the app.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 13/9/2015
+	Last Modified: 18/9/2015
 -}
 
 module ComTools (currentComment, setComment, appendComment, deleteComment) where

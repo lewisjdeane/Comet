@@ -35,28 +35,39 @@ settings = ["author", "comment-width"]
 parse :: [String] -> IO ()
 
 parse [] = doc
-parse (x:xs) | x == "s" || x == "set"     = T.setComment (head xs) (last xs)
-             | x == "a" || x == "append"  = T.appendComment (head xs) (last xs)
-             | x == "g" || x == "get"     = T.currentComment $ head xs
-             | x == "u" || x == "update"  = T.appendComment (head xs) ""
-             | x == "d" || x == "delete"  = T.deleteComment $ head xs
+parse (x:xs) | x == "s" || x == "set"     = T.setComment     (c !! 0) (c !! 1)
+             | x == "a" || x == "append"  = T.appendComment  (c !! 0) (c !! 1)
+             | x == "g" || x == "get"     = T.currentComment (c' !! 0)
+             | x == "u" || x == "update"  = T.appendComment  (c' !! 0) ""
+             | x == "d" || x == "delete"  = T.deleteComment  (c' !! 0)
              | x == "v" || x == "version" = version
-             | "set-" `isPrefixOf` x      = configS (drop 4 x) (head xs)
-             | "get-" `isPrefixOf` x      = configG $ drop 4 x
-             | otherwise                  = putStrLn "Incorrect usage - run 'comet' for usage details."
+             | "set-" `isPrefixOf` x      = configS (drop 4 x) (c' !! 0)
+             | "get-" `isPrefixOf` x      = configG (drop 4 x)
+             | otherwise                  = putStrLn usage
+             where c  = check xs 2
+             	   c' = check xs 1
+
+check :: [String] -> Int -> [String]
+
+check params num = if length params == num then params else error $ "Expected " ++ show num ++ " parameters but found " ++ ((show . length) params) ++ ". " ++ usage
+
+
+usage :: String
+
+usage = "Run 'comet' for a list of legal commands."
 
 
 -- Launches the appropriate config action.
 configS :: String -> String -> IO ()
 
 configS k v = do
-  if k `elem` settings then C.writeValue (k, v) else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
+  if k `elem` settings then C.writeValue (k, v) else error $ "No such setting '" ++ k ++ "' " ++ usage
 
 
 -- Gets the current setting from config.
 configG :: String -> IO ()
 
-configG k = if k `elem` settings then prettyPrint <$> C.readValue k >>= putStrLn else error $ "No such setting '" ++ k ++ "'. Run 'comet' for a list of legal commands."
+configG k = if k `elem` settings then prettyPrint <$> C.readValue k >>= putStrLn else error $ "No such setting '" ++ k ++ "' " ++ usage
 
 
 -- Adds a new line before and after a string.
@@ -74,7 +85,7 @@ doc = (putStrLn . unlines) $ ["", "Usage", ""] ++ commands ++ ["\n"] ++ language
 -- List of commands to be outputted when 'comet' is run.
 commands :: [String]
 
-commands = zipWith3 (concat3) x (repeat "\t") y
+commands = zipWith3 concat3 x (repeat "\t") y
           where x = map fst c
                 y = map snd c
                 c = [("COMMAND                    ", "DESCRIPTION"),
@@ -93,7 +104,7 @@ commands = zipWith3 (concat3) x (repeat "\t") y
 -- Nicely formats allowed files and extensions.
 languages :: [String]
 
-languages = zipWith3 (concat3) x (repeat "\t") y
+languages = zipWith3 concat3 x (repeat "\t") y
             where x = map fst l
                   y = map snd l
                   l = [("LANGUAGE    ", "FILE EXTENSION"),

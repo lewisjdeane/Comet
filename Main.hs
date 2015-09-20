@@ -3,7 +3,7 @@
 	documentation regarding usage.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 18/9/2015
+	Last Modified: 20/9/2015
 -}
 
 -- Imports
@@ -35,8 +35,8 @@ settings = ["author", "comment-width"]
 parse :: [String] -> IO ()
 
 parse [] = doc
-parse (x:xs) | x == "s" || x == "set"     = T.setComment     (c !! 0) (c !! 1)
-             | x == "a" || x == "append"  = T.appendComment  (c !! 0) (c !! 1)
+parse (x:xs) | x == "s" || x == "set"     = T.setComment     (c  !! 0) (c !! 1)
+             | x == "a" || x == "append"  = T.appendComment  (c  !! 0) (c !! 1)
              | x == "g" || x == "get"     = T.currentComment (c' !! 0)
              | x == "u" || x == "update"  = T.appendComment  (c' !! 0) ""
              | x == "d" || x == "delete"  = T.deleteComment  (c' !! 0)
@@ -60,8 +60,7 @@ usage = "Run 'comet' for a list of legal commands."
 -- Launches the appropriate config action.
 configS :: String -> String -> IO ()
 
-configS k v = do
-  if k `elem` settings then C.writeValue (k, v) else error $ "No such setting '" ++ k ++ "' " ++ usage
+configS k v = if k `elem` settings then C.writeValue (k, v) else error $ "No such setting '" ++ k ++ "' " ++ usage
 
 
 -- Gets the current setting from config.

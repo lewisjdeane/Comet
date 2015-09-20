@@ -3,7 +3,7 @@
 	commenting ability of the app.
 	
 	Author(s):     Lewis Deane
-	Last Modified: 18/9/2015
+	Last Modified: 20/9/2015
 -}
 
 module ComTools (currentComment, setComment, appendComment, deleteComment) where
@@ -12,6 +12,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     import Control.Applicative
     import Data.Char
     import Data.List (elemIndex, elemIndices, isPrefixOf)
+    import Data.List.Split
     import Data.Time.Calendar
     import Data.Time.Clock
     import System.Directory
@@ -61,8 +62,8 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
       s' <- splitInput l s
       c' <- removeIfComment c l
 
-      let d'  = "Last Modified: " ++ d
-          a'  = "Author(s):     " ++ a
+      let a'  = "Author(s):     " ++ a
+          d'  = "Last Modified: " ++ d
           h   = [getBlockStart l, comment l s', comment l "", comment l a', comment l d', getBlockEnd l] 
           c'' = unlines $ h ++ c'
 
@@ -117,7 +118,11 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     -- Gets a list of lines relating to the lines within the block comment.
     getCommentBlock :: [Line] -> Lang -> IO [Line]
 
-    getCommentBlock c l = if hasBlockComments l then extract c l else extract' c l
+    getCommentBlock c l = do
+      let f x = (length . filter (`isPrefixOf` x)) [getCommentChar l, getBlockStart l, getBlockEnd l] > 0
+          a   = takeWhile f c
+
+      if length a == 0 then error "No header comment found for this file." else return a
 
 
     getCommentFromBlock :: [Line] -> Lang -> IO Comment
@@ -125,22 +130,6 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     getCommentFromBlock s l = do
       let a = map (drop (length $ getCommentChar l)) ((init . tail) s)
       (return . unlines . takeWhile (/= "") . map trim) a
-
-
-    -- Extracts the comment block for languages with block comments.
-    extract :: [Line] -> Lang -> IO [Line]
-
-    extract c l = do
-      let k x = length (filter (`isPrefixOf` x) [getCommentChar l, getBlockStart l, getBlockEnd l]) > 0
-      return $ takeWhile k c
-
-
-    -- Same as extract but handles languages that don't have block comments.
-    extract' :: [Line] -> Lang -> IO [Line]
-
-    extract' c l = do
-      let k x = getCommentChar l `isPrefixOf` x
-      return $ takeWhile k c
 
 
     -- Takes a string and wraps the length according the the comment width setting.
@@ -196,13 +185,6 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
                      | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                   = "\t"
 
 
-    -- Says which languages support block comments.
-    hasBlockComments :: Lang -> Bool
-
-    hasBlockComments l | l `elem` [C, CPP, CSharp, CSS, ERB, Go, Haskell, HTML, MatLab, Java, JavaScript, PHP, Scala, SCSS, SASS, XML] = True
-                       | otherwise                                                                                                     = False
-
-
     -- Gets the author value from the config file.
     getAuthor :: IO String
 
@@ -215,6 +197,7 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     getDate = getCurrentTime >>= f . toGregorian . utctDay where f (y, m, d) = return $ show d ++ "/" ++ show m ++ "/" ++ show y
 
 
+    -- NOTE: Is there any way we can make this more concise? Perhaps zipwith?
     -- Gets the language from the file extension.
     getLang :: FileName -> Lang
 
@@ -243,13 +226,13 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
               | suf == ".scss"   = SCSS
               | suf == ".xml"    = XML
               | otherwise        = error $ suf ++ " files are not supported at this time."
-              where suf = getFileSuffix f
+              where suf = suffix f
 
 
-    -- Gets the file ending from the file name.
-    getFileSuffix :: FileName -> String
+    -- Takes a filename and returns its file extension e.g. test.hs returns ".hs" and main.html.erb returns ".erb".
+    suffix :: FileName -> String
 
-    getFileSuffix str = map toLower $ drop (last $ elemIndices '.' str) str 
+    suffix = (:) '.' . map toLower . last . splitOn "."
 
 
     -- Takes a string and chops off any whitespace at either end.
@@ -258,9 +241,9 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     trim x = let f = reverse . dropWhile (\x -> x == ' ' || x == '\t') in (f . f) x
 
 
+    -- NOTE: This could do with tidying up.
     -- Comments a string in the style of the language.
     comment :: Lang -> Comment -> String
 
     comment l s | s == ""   = getCommentChar l
-                | otherwise = c l s
-                where c l' s' = (init . unlines . map (\x -> getCommentChar l' ++ x) . lines) s'
+                | otherwise = (init . unlines . map ((++) $ getCommentChar l) . lines) s

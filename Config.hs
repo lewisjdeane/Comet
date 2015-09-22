@@ -34,7 +34,7 @@ module Config (configName, readValue, writeValue) where
         contents <- lines <$> readFile path
 
         let f = filter (key `isPrefixOf`) contents
-            v = (last . splitOn ":") $ head f
+            v = (last . splitOn ":" . head) f
 
         return v
 

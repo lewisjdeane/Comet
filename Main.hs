@@ -1,9 +1,10 @@
 {-
-	Main file for 'comet', handles commands and provides
-	documentation regarding usage.
+	Main file for 'comet', handles commands and provides documentation regarding
+	usage.
 	
-	Author(s):     Lewis Deane
-	Last Modified: 20/9/2015
+	Author(s):     run 'comet set-author NAME' to change this setting.
+	License:       BSD
+	Last Modified: 22/9/2015
 -}
 
 -- Imports
@@ -28,7 +29,7 @@ main = getArgs >>= parse
 -- Allowable settings.
 settings :: [String]
 
-settings = ["author", "comment-width"]
+settings = ["author", "comment-width", "license"]
 
 
 -- Parses the input from the command line and handles what should be done.
@@ -52,6 +53,7 @@ check :: [String] -> Int -> [String]
 check params num = if length params == num then params else error $ "Expected " ++ show num ++ " parameters but found " ++ ((show . length) params) ++ ". " ++ usage
 
 
+-- Provides a reusable string to be used after errors explaining what the user can do to get help.
 usage :: String
 
 usage = "Run 'comet' for a list of legal commands."
@@ -78,7 +80,7 @@ prettyPrint s = "\n" ++ s ++ "\n"
 -- What should be printed out when no args are passed to our inital command.
 doc :: IO ()
 
-doc = (putStrLn . unlines) $ ["", "Usage", ""] ++ commands ++ ["\n"] ++ languages ++ [""]
+doc = (putStrLn . unlines) $ [prettyPrint "Usage"] ++ commands ++ ["\n"] ++ languages ++ [""]
 
 
 -- List of commands to be outputted when 'comet' is run.
@@ -96,8 +98,10 @@ commands = zipWith3 concat3 x (repeat "\t") y
 		             ("comet v|version            ", "Get current version."),
 		             ("comet set-author NAME      ", "Set author to name."),
 		             ("comet set-comment-width NUM", "Set comment width to num."),
+		             ("comet set-license NAME      ","Set license to name."),
 		             ("comet get-author           ", "Get author."),
-		             ("comet get-comment-width    ", "Get comment width.")]
+		             ("comet get-comment-width    ", "Get comment width."),
+		             ("comet get-license          ", "Get license.")]
 
 
 -- Nicely formats allowed files and extensions.

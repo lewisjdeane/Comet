@@ -57,15 +57,17 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     writeComment :: Comment -> [Line] -> Lang -> FileName -> IO ()
 
     writeComment s c l f = do
-      d  <- getDate
-      a  <- getAuthor
-      s' <- splitInput l s
-      c' <- removeIfComment c l
+      d   <- getDate
+      a   <- getAuthor
+      lic <- getLicense
+      s'  <- splitInput l s
+      c'  <- removeIfComment c l
 
-      let a'  = "Author(s):     " ++ a
-          d'  = "Last Modified: " ++ d
-          h   = [getBlockStart l, comment l s', comment l "", comment l a', comment l d', getBlockEnd l] 
-          c'' = unlines $ h ++ c'
+      let a'   = "Author(s):     " ++ a
+          lic' = "License:       " ++ lic
+          d'   = "Last Modified: " ++ d
+          h    = [getBlockStart l, comment l s', comment l "", comment l a', comment l lic', comment l d', getBlockEnd l] 
+          c''  = unlines $ h ++ c'
 
       (tempName, tempHandle) <- openTempFile "." "temp"
 
@@ -189,6 +191,11 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
     getAuthor :: IO String
 
     getAuthor = C.readValue "author"
+
+
+    getLicense :: IO String
+
+    getLicense = C.readValue "license"
 
 
     -- Gets todays date in a formatted string.

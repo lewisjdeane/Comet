@@ -22,60 +22,90 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
 
     -- Data type composed of the supported languages.
     data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
-    
+
     -- Type synoyms to make the code more readable.
     type FileName = String
     type Comment  = String
     type Line     = String
+    type Field    = String
+    type Content  = String
+
+    -- Move these two functions to main?
+    -- List of the fields that can be shown in the header.
+    fields :: [Field]
+
+    fields = ["Author(s)", "License", "Last Modified"]
+
+    getFieldsFromChar :: [String] -> [Field]
+
+    getFieldsFromChar p = map f p
+                        where f "-l"  = "License"
+                              f "-a"  = "Author(s)"
+                              f "-lm" = "Last Modified"
+                              f x     = error "No such parameter '" ++ x ++ "'."
+
+
+    getParams :: [Field] -> IO [(Field, Content)]
+
+    getParams params = zippity >>= (return . filter (\x -> not $ (fst x) `elem` (getFieldsFromChar params)))
+
+    -- Map over lines.
+    -- Check if any of these lines
+    getCurrentParams :: [Line] -> Lang -> [(Field, Content)]
+
+    getCurrentParams l lang = map fmat $ takeWhile f $ dropWhile (not . f) l
+      where f x  = any id $ (map (\y -> y `isPrefixOf` x) (((++) (getCommentChar lang)) <$> fields))
+            fmat z = (\a -> (trim (a !! 0), trim (a !! 1))) ((parts . d) z)
+            parts = splitOn ":"
+            d = drop ((length . getCommentChar) lang)
+
 
     -- Sets a comment to the desired file.
-    setComment :: FileName -> Comment -> IO ()
+    setComment :: FileName -> Comment -> [Field] -> IO ()
 
-    setComment f c = do
-        let l = getLang f
-
-        content <- lines <$> readFile f
-
-        writeComment c content l f
-
-    
-    -- Appends a comment to the desired file.
-    appendComment :: FileName -> Comment -> IO ()
-
-    appendComment f c = do
-      let l = getLang f
-
-      content <- lines <$> readFile f
-      current <- getComment content l
-
-      let n = current ++ " " ++ c
-
-      writeComment n content l f
+    setComment f c params = getParams params >>= writeComment' f c
 
 
-    -- Writes a comment to a file, file is read beforehand in either setComment or appendComment.
-    writeComment :: Comment -> [Line] -> Lang -> FileName -> IO ()
+    appendComment :: FileName -> Comment -> [Field] -> IO ()
 
-    writeComment s c l f = do
-      d   <- getDate
-      a   <- getAuthor
-      lic <- getLicense
-      s'  <- splitInput l s
-      c'  <- removeIfComment c l
+    appendComment f c params = do
+      let lang = getLang f
 
-      let a'   = "Author(s):     " ++ a
-          lic' = "License:       " ++ lic
-          d'   = "Last Modified: " ++ d
-          h    = [getBlockStart l, comment l s', comment l "", comment l a', comment l lic', comment l d', getBlockEnd l] 
-          c''  = unlines $ h ++ c'
+      l <- lines <$> readFile f
+      p <- if length params == 0 then return (getCurrentParams l lang) else getParams params
+      c' <- getComment l lang
+
+      writeComment' f (c' ++ " " ++ c) p
+
+
+    -- Write comment should take a file name, a comment and the field-content array.
+    writeComment' :: FileName -> Comment -> [(Field, Content)] -> IO ()
+
+    writeComment' fname comment fields = do
+      let lang = getLang fname
+
+      content   <- lines <$> readFile fname
+      content'  <- removeIfComment content lang
+      comBlock <-  generateCommentBlock comment fields lang
+      
+      let c'' = comBlock ++ content'
 
       (tempName, tempHandle) <- openTempFile "." "temp"
 
-      hPutStr tempHandle c''
+      hPutStr tempHandle $ unlines c''
       hClose  tempHandle
 
-      removeFile f
-      renameFile tempName f
+      removeFile fname
+      renameFile tempName fname 
+
+    
+    zippity :: IO [(Field, Content)]
+
+    zippity = do
+      a <- getAuthor
+      l <- getLicense
+      d <- getDate
+      return $ zip fields [a, l, d]
 
 
     -- Deletes the comment from the current file.
@@ -116,6 +146,29 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
       a <- getCommentBlock c l
       getCommentFromBlock a l
 
+    
+    generateCommentBlock :: Comment -> [(Field, String)] -> Lang -> IO [Line]
+
+    generateCommentBlock c x l = do
+      s <- splitInput l c
+      return $ [getBlockStart l] ++ (lines . comment l) s ++ generateFields x l ++ [getBlockEnd l]
+
+
+    generateFields :: [(Field, Content)] -> Lang -> [Line]
+
+    generateFields [] _ = []
+    generateFields x l  = [getCommentChar l] ++ map (\a -> getCommentChar l ++ fst a ++ ":" ++ rep " " (s a) ++ snd a) x
+                        where mlen = foldl max 0 len
+                              len  = map ((+) 1 . length . fst) x
+                              s y  = mlen - ((length . fst) y)
+
+
+    -- Replicates a String an amount of times.
+    rep :: String -> Int -> String
+
+    rep s 0 = ""
+    rep s n = s ++ rep s (n - 1)
+
 
     -- Gets a list of lines relating to the lines within the block comment.
     getCommentBlock :: [Line] -> Lang -> IO [Line]
@@ -124,9 +177,10 @@ module ComTools (currentComment, setComment, appendComment, deleteComment) where
       let f x = (length . filter (`isPrefixOf` x)) [getCommentChar l, getBlockStart l, getBlockEnd l] > 0
           a   = takeWhile f c
 
-      if length a == 0 then error "No header comment found for this file." else return a
+      return a
 
 
+    -- Rewrite
     getCommentFromBlock :: [Line] -> Lang -> IO Comment
 
     getCommentFromBlock s l = do

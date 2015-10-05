@@ -1,10 +1,9 @@
 {-
-	Main file for 'comet', handles commands and provides documentation regarding
-	usage.
+	Main file for 'comet', handles commands and provides documentation regarding usage.
 	
 	Author(s):     run 'comet set-author NAME' to change this setting.
-	License:       BSD
-	Last Modified: 22/9/2015
+	License:       MIT
+	Last Modified: 3/10/2015
 -}
 
 -- Imports
@@ -15,7 +14,7 @@ import System.Directory
 import System.IO
 
 import qualified Config as C
-import qualified ComTools as T
+import qualified CommentTools as T
 
 -- Type synonyms for increased readability.
 type FileName = String
@@ -31,22 +30,52 @@ settings :: [String]
 
 settings = ["author", "comment-width", "license"]
 
+{-
+	comet -> Shows Documentation.
 
+	comet v -> Shows version.
+
+	comet s FILE COMMENT -> Sets COMMENT to FILE with all fields.
+	comet s FILE COMMENT -l -a -> Sets COMMENT to FILE without license (l) and author (a).
+
+	comet a FILE COMMENT -> Appends COMMENT to FILE with current fields.
+	comet a FILE COMMENT -l -a -> Appends COMMENT to FILE without the license and author fields.
+
+	comet u FILE -> Updates current fields in FILE with the latest values.
+	comet u FILE -l -a -> Updates all fields but license and author with latest values.
+
+	comet d FILE -> Delete the comment header from FILE.
+
+	comet set-SETTING VALUE -> Sets the value of SETTING to VALUE.
+
+	comet get-SETTING -> Gets the current value of SETTING. 
+-}
+
+-- TODO: Rewrite this, needs improving.
 -- Parses the input from the command line and handles what should be done.
 parse :: [String] -> IO ()
 
 parse [] = doc
-parse (x:xs) | x == "s" || x == "set"     = T.setComment     (c  !! 0) (c !! 1)
-             | x == "a" || x == "append"  = T.appendComment  (c  !! 0) (c !! 1)
-             | x == "g" || x == "get"     = T.currentComment (c' !! 0)
-             | x == "u" || x == "update"  = T.appendComment  (c' !! 0) ""
-             | x == "d" || x == "delete"  = T.deleteComment  (c' !! 0)
-             | x == "v" || x == "version" = version
-             | "set-" `isPrefixOf` x      = configS (drop 4 x) (c' !! 0)
-             | "get-" `isPrefixOf` x      = configG (drop 4 x)
-             | otherwise                  = putStrLn usage
-             where c  = check xs 2
-             	   c' = check xs 1
+
+parse [x] | x == "v" || x == "version" = version
+          | "get-" `isPrefixOf` x      = configG (drop 4 x)
+          | otherwise                  = putStrLn usage
+
+parse [x, y] | x == "g" || x == "get"    = T.currentComment y
+             | x == "d" || x == "delete" = T.deleteComment  y
+          	 | "set-" `isPrefixOf` x     = configS (drop 4 x) y
+             | otherwise                 = putStrLn usage
+
+parse (x:y:z:xs) | x == "s" || x == "set"    = T.setComment    y z xs
+                 | x == "a" || x == "append" = T.appendComment y z xs
+                 | otherwise                 = putStrLn usage
+                 
+parse (x:y:xs) | x == "u" || x == "update" = T.appendComment y "" xs
+               | otherwise                 = putStrLn usage
+
+
+parse _ = putStrLn usage
+
 
 check :: [String] -> Int -> [String]
 

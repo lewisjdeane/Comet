@@ -1,9 +1,9 @@
 {-
-  Handles everything to do with the language being acted on.
-  
-  Author(s):     Lewis Deane
-  License:       BSD
-  Last Modified: 4/10/2015
+    Handles everything to do with the language being acted on.
+    
+    Author(s):     Lewis Deane
+    License:       MIT
+    Last Modified: 18/10/2015
 -}
 
 module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) where
@@ -12,7 +12,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     import Data.List.Split
 
     -- Data type composed of the supported languages.
-    data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
+    data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | Lisp | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
 
     -- Useful type synonyms.
     type FileName  = String
@@ -45,7 +45,8 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     getCommentChar l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
                      | l `elem` [CoffeeScript, Python, R, Ruby]                                     = "# "
                      | l `elem` [HAML]                                                              = "-# "
-                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                   = getCommentChar l
+                     | l `elem` [Lisp]                                                              = ";;; "
+                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                   = "    "
 
 
     -- Gets the language from the file extension.
@@ -64,6 +65,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
               | suf == ".html"   = HTML
               | suf == ".htm"    = HTML
               | suf == ".xhtml"  = HTML
+              | suf == ".lisp"   = Lisp
               | suf == ".java"   = Java
               | suf == ".js"     = JavaScript
               | suf == ".matlab" = MatLab

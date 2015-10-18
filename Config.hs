@@ -1,8 +1,9 @@
 {-
-	Handles reading and writing to the config file.
-	
-	Author(s):     Lewis Deane
-	Last Modified: 18/9/2015
+    Handles reading and writing to the config file.
+    
+    Author(s):     Lewis Deane
+    License:       MIT
+    Last Modified: 18/10/2015
 -}
 
 module Config (configName, readValue, writeValue) where

@@ -1,205 +1,246 @@
-    module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment) where
+{-
+    Handles all the functionality surrounding the commenting ability. This
+    covers things like everything to do with reading and writing comments and
+    provides lots of helper functions.
+    
+    Author(s):     Lewis Deane
+    License:       MIT
+    Last Modified: 18/10/2015
+-}
 
-        -- Imports for things we will need.
-        import Control.Applicative
-        import Data.List (isPrefixOf)
-        import Data.Time.Calendar
-        import Data.Time.Clock
-        import System.Directory
-        import System.IO
+module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment) where
 
-        import qualified Config as C
-        import LangTools
+    -- Imports for things we will need.
+    import Control.Applicative
+    import Data.List (isPrefixOf)
+    import Data.Time.Calendar
+    import Data.Time.Clock
+    import System.Directory
+    import System.IO
 
-        -- Useful type synonyms.
-        type FileName = String
-        type Comment  = String
-        type Params   = [String]
-        type Line     = String
-        type Lines    = [Line]
-        type Field    = (String, String)
-        type Fields   = [Field]
+    import qualified Config as C
+    import LangTools
 
+    -- Useful type synonyms.
+    type FileName = String
+    type Comment  = String
+    type Params   = [String]
+    type Line     = String
+    type Lines    = [Line]
+    type Field    = (String, String)
+    type Fields   = [Field]
 
-        -- Writes a comment to filename with the associated params.
-        write :: FileName -> Comment -> Lines -> Params -> IO ()
 
-        write fname com content params = do
-            let lang = getLang fname
-            
-            f     <- getFields params
-            block <- generateCommentBlock lang com f
-            
-            writeToFile fname $ block ++ content
+    -- Writes a comment to filename with the associated params.
+    write :: FileName -> Comment -> Lines -> Params -> IO ()
 
+    write fname com content params = do
+        let lang     = getLang fname
+            content' = removeCommentBlock lang content
 
-        writeToFile :: FileName -> Lines -> IO ()
+        f     <- getFields params
+        block <- generateCommentBlock lang com f
 
-        writeToFile fname content = do
-            (tempName, tempHandle) <- openTempFile "." "temp"
+        writeToFile fname $ block ++ content'
 
-            hPutStr tempHandle $ unlines content
-            hClose  tempHandle
 
-            removeFile fname
-            renameFile tempName fname 
+    -- Opens a temp file, writes content to it. It does this all safely.
+    writeToFile :: FileName -> Lines -> IO ()
 
+    writeToFile fname content = do
+        (tempName, tempHandle) <- openTempFile "." "temp"
 
-        -- Sets a comment to a file and applies the params if needed.
-        setComment :: FileName -> Comment -> Params -> IO ()
+        hPutStr tempHandle $ unlines content
+        hClose  tempHandle
 
-        setComment fname com params = do
-            content <- lines <$> readFile fname
-            write fname com content params
+        removeFile fname
+        renameFile tempName fname 
 
 
-        -- Appends a comment to a file with the appropriate parameters.
-        appendComment :: FileName -> Comment -> Params -> IO ()
+    -- Sets a comment to a file and applies the params if needed.
+    setComment :: FileName -> Comment -> Params -> IO ()
 
-        appendComment fname com params = do
-            content <- lines <$> readFile fname
-            oldCom  <- getComment content
+    setComment fname com params = do
+        content <- lines <$> readFile fname
+        write fname com content params
 
-            write fname (oldCom ++ " " ++ com) content params
 
+    -- Appends a comment to a file with the appropriate parameters.
+    appendComment :: FileName -> Comment -> Params -> IO ()
 
-        -- Updates the comment block if there is any new information.
-        updateComment :: FileName -> Params -> IO ()
+    appendComment fname com params = do
+        content <- lines <$> readFile fname
 
-        updateComment fname params = putStrLn "Hello"
+        let lang   = getLang fname
+            oldCom = getComment lang content
 
+        write fname (oldCom ++ " " ++ com) content params
 
-        -- Deletes a comment block from a file.
-        deleteComment :: FileName -> IO ()
 
-        deleteComment fname = do
-            putStrLn "Deleted."
+    -- Updates the comment block if there is any new information.
+    updateComment :: FileName -> Params -> IO ()
 
+    updateComment fname params = do
+        content <- lines <$> readFile fname
 
-        -- Retrieves the current comment from a file.
-        currentComment :: FileName -> IO ()
+        let lang   = getLang fname
+            oldCom = getComment lang content
 
-        currentComment fname = do
-            content <- lines <$> readFile fname
-            getComment content >>= putStrLn
+        write fname oldCom content params
 
 
-        -- Removes the current comment section.
-        removeCommentBlock :: Lang -> Lines -> Lines
+    -- Deletes a comment block from a file.
+    deleteComment :: FileName -> IO ()
 
-        removeCommentBlock lang content = dropWhile (isInCommentBlock lang) content
+    deleteComment fname = do
+        let lang = getLang fname
+        content <- lines <$> readFile fname
+        writeToFile fname $ removeCommentBlock lang content
 
 
-        getCommentBlock :: Lang -> Lines -> Lines
+    -- Retrieves the current comment from a file.
+    currentComment :: FileName -> IO ()
 
-        getCommentBlock lang content = takeWhile (isInCommentBlock lang) content
+    currentComment fname = do
+        let lang = getLang fname
+        content <- lines <$> readFile fname
+        (putStrLn . unlines) $ getCommentBlock lang content
 
 
-        -- Checks to see if the given line begin with a comment lies within a comment block.
-        isInCommentBlock :: Lang -> Line -> Bool
+    -- Removes the current comment section.
+    removeCommentBlock :: Lang -> Lines -> Lines
 
-        isInCommentBlock lang line = any (`isPrefixOf` line) [getBlockStart lang, getCommentChar lang, getBlockEnd lang]
+    removeCommentBlock lang content = dropWhile (isInCommentBlock lang) content
 
 
-        -- Gets a the comment from a bunch of lines making up the file.
-        getComment :: Lines -> IO Comment
+    -- Gets the comment block if it exists.
+    getCommentBlock :: Lang -> Lines -> Lines
 
-        getComment content = return "Hello"
+    getCommentBlock lang content = if head content /= getBlockStart lang then error "No comment block found. Run 'comet' for a list of legal commands." else takeWhile (isInCommentBlock lang) content
 
 
-        -- Adds a comment character to the start of a string needing commenting.
-        comment :: Lang -> Line -> Line
+    -- Checks to see if the given line begin with a comment lies within a comment block.
+    isInCommentBlock :: Lang -> Line -> Bool
 
-        comment lang line = getCommentChar lang ++ line
+    isInCommentBlock lang line = any (`isPrefixOf` line) [getBlockStart lang, getCommentChar lang, getBlockEnd lang]
 
 
-        -- Generates the comment block to be added to the header of the file.
-        generateCommentBlock :: Lang -> Comment -> Fields -> IO Lines
+    -- Gets a the comment from a bunch of lines making up the file.
+    getComment :: Lang -> Lines -> Comment
 
-        generateCommentBlock lang com fields = do
-            splitLines <- splitInput fname com
-            return $ [getBlockStart lang] ++ map (comment lang) splitLines ++ map (comment lang) ["License: BSD"] ++ [getBlockEnd lang]
+    getComment lang content = if head content /= getBlockStart lang then error "No comment found. Run 'comet' for a list of legal commands." else (unlines . map (strip lang) . takeWhile (\x -> (trim . strip lang) x /= "" && trim x /= getBlockEnd lang)) $ tail content
 
-        -- Creates a correctly formatted field block that will go in the comment block.
-        generateFieldBlock :: Lang -> Fields -> Lines
 
-        generateFieldBlock _ []        = []
-        generateFieldBlock lang fields = [""] ++ map (\a -> fst a ++ ":" ++ rep " " (s a) ++ snd a) fields
-                                         where mlen = foldl max 0 len
-                                               len  = map (succ . length . fst) fields
-                                               s y  = mlen - ((length . fst) y)
+    -- Adds a comment character to the start of a string needing commenting.
+    comment :: Lang -> Line -> Line
 
+    comment lang line = getCommentChar lang ++ line
 
-        -- Replicates a string an amount of times.
-        rep :: String -> Int -> String
 
-        rep s 0 = ""
-        rep s n = s ++ rep s (n - 1)
-        
+    -- Generates the comment block to be added to the header of the file.
+    generateCommentBlock :: Lang -> Comment -> Fields -> IO Lines
 
-        -- Needs rewriting.
-        -- Takes a string and wraps the length according the the comment width setting.
-        splitInput :: Lang -> Comment -> IO Lines
+    generateCommentBlock lang com fields = do
+        splitLines <- splitInput lang com
+        return $ [getBlockStart lang] ++ map (comment lang) splitLines ++ map (comment lang) (generateFieldBlock lang fields) ++ [getBlockEnd lang]
 
-        splitInput l c = do
-            lim <- read <$> C.readValue "comment-width"
-      
-            let lim' = lim - (length $ getCommentChar l)
-                w = words c
-                x = foldl f [] w
-                f [] x   = [x]
-                f acc [] = acc
-                f acc x  = if (length . last) acc + length x < lim' then init acc ++ [last acc ++ " " ++ x] else acc ++ [x]
 
-            return x
+    -- Creates a correctly formatted field block that will go in the comment block.
+    generateFieldBlock :: Lang -> Fields -> Lines
 
+    generateFieldBlock _ []        = []
+    generateFieldBlock lang fields = [""] ++ map (\a -> fst a ++ ":" ++ rep " " (s a) ++ snd a) fields
+                                     where mlen = foldl max 0 len
+                                           len  = map (succ . length . fst) fields
+                                           s y  = mlen - ((length . fst) y)
 
-        -- List of the fields that can be shown in the header.
-        fields :: [String]
 
-        fields = ["Author(s)", "License", "Last Modified"]
+    -- Replicates a string an amount of times.
+    rep :: String -> Int -> String
 
+    rep s 0 = ""
+    rep s n = s ++ rep s (n - 1)
 
-        -- Turns the shorthand notation into the full version.
-        getFieldsFromParams :: [String] -> [String]
 
-        getFieldsFromParams p = map f p
-                            where f "-l"  = "License"
-                                  f "-a"  = "Author(s)"
-                                  f "-lm" = "Last Modified"
-                                  f x     = error "No such parameter '" ++ x ++ "'."
+    -- Takes a string and chops off any whitespace at either end.
+    trim :: String -> String
 
+    trim x = let f = reverse . dropWhile (\x -> x == ' ' || x == '\t') in (f . f) x
 
-        fieldify :: IO Fields
 
-        fieldify = do
-          a <- author
-          l <- license
-          d <- date
-          return $ zip fields [a, l, d]
+    -- Removes the comment character preceding the line.
+    strip :: Lang -> Line -> Line
 
+    strip lang = drop ((length . getCommentChar) lang)
+    
 
-        getFields :: [String] -> IO Fields
+    -- Takes a string and wraps the length according the the comment width setting.
+    splitInput :: Lang -> Comment -> IO Lines
 
-        getFields params = fieldify >>= (return . filter (\x -> not $ (fst x) `elem` (getFieldsFromParams params)))
+    splitInput l c = do
+        lim <- read <$> C.readValue "comment-width"
+  
+        let lim' = lim - (length $ getCommentChar l)
+            w = words c
+            x = foldl f [] w
+            f [] x   = [x]
+            f acc [] = acc
+            f acc x  = if (length . last) acc + length x < lim' then init acc ++ [last acc ++ " " ++ x] else acc ++ [x]
 
+        return x
 
 
-        author :: IO String
+    -- List of the fields that can be shown in the header.
+    fields :: [String]
 
-        author = C.readValue "author"
+    fields = ["Author(s)", "License", "Last Modified"]
 
 
-        license :: IO String
+    -- Turns the shorthand notation into the full version.
+    getFieldsFromParams :: [String] -> [String]
 
-        license = C.readValue "license"
+    getFieldsFromParams p = map f p
+                        where f "-l"  = "License"
+                              f "-a"  = "Author(s)"
+                              f "-lm" = "Last Modified"
+                              f x     = error "No such parameter '" ++ x ++ "'."
 
 
-        commentWidth :: IO String
+    -- Zips the possible parameters against their current value.
+    fieldify :: IO Fields
 
-        commentWidth = C.readValue "comment-width"
+    fieldify = do
+      a <- author
+      l <- license
+      d <- date
+      return $ zip fields [a, l, d]
 
 
-        date :: IO String
+    -- Returns a list of fields that we want after filtering out ones not wanted.
+    getFields :: [String] -> IO Fields
 
-        date = getCurrentTime >>= f . toGregorian . utctDay where f (y, m, d) = return $ show d ++ "/" ++ show m ++ "/" ++ show y
+    getFields params = fieldify >>= (return . filter (\x -> not $ (fst x) `elem` (getFieldsFromParams params)))
+
+
+    -- Gets the value associated with the 'author' key in the config file.
+    author :: IO String
+
+    author = C.readValue "author"
+
+
+    -- Gets the value associated with the 'license' key in the config file.
+    license :: IO String
+
+    license = C.readValue "license"
+
+
+    -- Gets the value associated with the 'comment-width' key in the config file.
+    commentWidth :: IO String
+
+    commentWidth = C.readValue "comment-width"
+
+
+    -- Gets todays date.
+    date :: IO String
+
+    date = getCurrentTime >>= f . toGregorian . utctDay where f (y, m, d) = return $ show d ++ "/" ++ show m ++ "/" ++ show y

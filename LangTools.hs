@@ -12,7 +12,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     import Data.List.Split
 
     -- Data type composed of the supported languages.
-    data Lang = C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | Lisp | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
+    data Lang = Arduino | C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | Lisp | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
 
     -- Useful type synonyms.
     type FileName  = String
@@ -22,37 +22,39 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     -- Gets the string relating to the start of a block comment for the supported languages.
     getBlockStart :: Lang -> ComChar
 
-    getBlockStart l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = "/*"
-                    | l `elem` [ERB, HTML, XML]                                                    = "<!--"
-                    | l `elem` [Haskell]                                                           = "{-"
-                    | l `elem` [MatLab]                                                            = "%{"
-                    | otherwise                                                                    = getCommentChar l
+    getBlockStart l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = "/*"
+                    | l `elem` [ERB, HTML, XML]                                                             = "<!--"
+                    | l `elem` [Haskell]                                                                    = "{-"
+                    | l `elem` [MatLab]                                                                     = "%{"
+                    | otherwise                                                                             = getCommentChar l
 
 
     -- Gets the string relating to the end of a block comment for the supported languages.
     getBlockEnd :: Lang -> ComChar
 
-    getBlockEnd l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " */"
-                  | l `elem` [ERB, HTML, XML]                                                    = "-->"
-                  | l `elem` [Haskell]                                                           = "-}"
-                  | l `elem` [MatLab]                                                            = "%}"
-                  | otherwise                                                                    = getCommentChar l
+    getBlockEnd l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " */"
+                  | l `elem` [ERB, HTML, XML]                                                             = "-->"
+                  | l `elem` [Haskell]                                                                    = "-}"
+                  | l `elem` [MatLab]                                                                     = "%}"
+                  | otherwise                                                                             = getCommentChar l
 
 
     -- Gets the string relating to the start of each comment line within a block comment.
     getCommentChar :: Lang -> ComChar
 
-    getCommentChar l | l `elem` [C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
-                     | l `elem` [CoffeeScript, Python, R, Ruby]                                     = "# "
-                     | l `elem` [HAML]                                                              = "-# "
-                     | l `elem` [Lisp]                                                              = ";;; "
-                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                   = "    "
+    getCommentChar l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
+                     | l `elem` [CoffeeScript, Python, R, Ruby]                                              = "# "
+                     | l `elem` [HAML]                                                                       = "-# "
+                     | l `elem` [Lisp]                                                                       = ";;; "
+                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                            = "    "
 
 
     -- Gets the language from the file extension.
     getLang :: FileName -> Lang
 
-    getLang f | suf == ".c"      = C
+    getLang f | suf == ".ino"    = Arduino
+              | suf == ".pde"    = Arduino
+              | suf == ".c"      = C
               | suf == ".h"      = C
               | suf == ".cpp"    = CPP
               | suf == ".coffee" = CoffeeScript

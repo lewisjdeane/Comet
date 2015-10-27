@@ -107,10 +107,10 @@ commands = zipWith3 concat3 x (repeat "\t") y
           where x = map fst c
                 y = map snd c 
                 c = [("COMMAND                    ", "DESCRIPTION"),
-                     ("comet s|set FILE COMMENT   ", "Write comment to file."),
+                     ("comet s|set    FILE COMMENT", "Write comment to file."),
                      ("comet a|append FILE COMMENT", "Append comment to file."),
                      ("comet d|delete FILE        ", "Delete comment from file."),
-                     ("comet g|get FILE           ", "Get comment block from file."),
+                     ("comet g|get    FILE        ", "Get comment block from file."),
                      ("comet u|update FILE        ", "Updates file with current settings."),
                      ("comet v|version            ", "Get current version."),
                      ("comet author               ", "Get author."),
@@ -139,6 +139,7 @@ languages = zipWith3 concat3 x (repeat "\t") y
             where x = map fst l
                   y = map snd l
                   l = [("LANGUAGE   ", "FILE EXTENSION"),
+                      ("Arduino     ", ".pde .ino"),
                       ("C           ", ".c .h"),
                       ("C++         ", ".cpp"),
                       ("CoffeeScript", ".coffee"),
@@ -177,4 +178,4 @@ concat3 x y z = x ++ y ++ z
 -- Returns the current version number.
 version :: IO ()
 
-version = putStrLn "v1.0"
+version = putStrLn "v1.0.1"

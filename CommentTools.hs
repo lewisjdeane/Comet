@@ -5,7 +5,7 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 18/10/2015
+    Last Modified: 6/11/2015
 -}
 
 module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment) where
@@ -13,6 +13,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     -- Imports for things we will need.
     import Control.Applicative
     import Data.List (isPrefixOf)
+    import Data.String.Utils (replace)
     import Data.Time.Calendar
     import Data.Time.Clock
     import System.Directory
@@ -210,10 +211,10 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     fieldify :: IO Fields
 
     fieldify = do
-      a <- author
-      l <- license
-      d <- date
-      return $ zip fields [a, l, d]
+        a <- author
+        l <- license
+        d <- date
+        return $ zip fields [a, l, d]
 
 
     -- Returns a list of fields that we want after filtering out ones not wanted.
@@ -240,7 +241,13 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     commentWidth = C.readValue "comment-width"
 
 
-    -- Gets todays date.
+    -- Gets todays date in the format the user has specificied in the config file.
     date :: IO String
 
-    date = getCurrentTime >>= f . toGregorian . utctDay where f (y, m, d) = return $ show d ++ "/" ++ show m ++ "/" ++ show y
+    date = do
+        ct      <- getCurrentTime
+        dformat <- C.readValue "date-format"
+
+        let f (y, m, d) = (replace "dd" (show d) . replace "mm" (show m) . replace "yy" ((drop 2 . show) y) . replace "yyyy" (show y)) dformat
+        
+        (return . f . toGregorian . utctDay) ct

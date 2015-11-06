@@ -4,7 +4,7 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 18/10/2015
+    Last Modified: 6/11/2015
 -}
 
 -- Imports
@@ -13,6 +13,7 @@ import Data.List (isPrefixOf)
 import System.Environment
 import System.Directory
 import System.IO
+import Text.Regex.Posix
 
 import qualified Config as C
 import qualified CommentTools as T
@@ -29,7 +30,7 @@ main = getArgs >>= parse
 -- Allowable settings.
 settings :: [String]
 
-settings = ["author", "comment-width", "license"]
+settings = ["author", "comment-width", "date-format", "license"]
 
 
 -- Parses the input from the command line and handles what should be done.
@@ -43,10 +44,12 @@ parse ["version"] = version
 parse ["license"]       = configG "license"
 parse ["author"]        = configG "author"
 parse ["comment-width"] = configG "comment-width"
+parse ["date-format"]   = configG "date-format"
 
 parse ["license", x]       = configS "license"       x
 parse ["author", x]        = configS "author"        x
 parse ["comment-width", x] = configS "comment-width" x
+parse ["date-format", x]   = if isLegalDateFormat x then configS "date-format" x else error $ x ++ " is not a valid date format."
 
 parse ["g", x]   = T.currentComment x
 parse ["get", x] = T.currentComment x
@@ -66,9 +69,16 @@ parse ("append" :x:y:xs) = T.appendComment x y xs
 parse _ = putStrLn usage
 
 
-check :: [String] -> Int -> [String]
+-- Checks if the user has supplied a legal date format pattern.
+isLegalDateFormat :: String -> Bool
 
-check params num = if length params == num then params else error $ "Expected " ++ show num ++ " parameters but found " ++ ((show . length) params) ++ ". " ++ usage
+isLegalDateFormat s | s =~ "(dd(/|-)mm(/|-)(yy|yyyy))" = True
+                    | s =~ "(mm(/|-)dd(/|-)(yy|yyyy))" = True
+                    | s =~ "(dd(/|-)(yy|yyyy)(/|-)mm)" = True
+                    | s =~ "(mm(/|-)(yy|yyyy)(/|-)dd)" = True
+                    | s =~ "((yy|yyyy)(/|-)dd(/|-)mm)" = True
+                    | s =~ "((yy|yyyy)(/|-)mm(/|-)dd)" = True
+                    | otherwise                        = False
 
 
 -- Provides a reusable string to be used after errors explaining what the user can do to get help.
@@ -117,6 +127,8 @@ commands = zipWith3 concat3 x (repeat "\t") y
                      ("comet author NAME          ", "Set author to name."),
                      ("comet comment-width        ", "Get comment width."),
                      ("comet comment-width NUM    ", "Set comment width to num."),
+                     ("comet date-format          ", "Get date format."),
+                     ("comet date-format PATTERN  ", "Set date format to pattern."),
                      ("comet license              ", "Get license."),
                      ("comet license NAME         ", "Set license to name.")]
  
@@ -143,6 +155,7 @@ languages = zipWith3 concat3 x (repeat "\t") y
                       ("C           ", ".c .h"),
                       ("C++         ", ".cpp"),
                       ("CoffeeScript", ".coffee"),
+                      ("C#          ", ".cs"),
                       ("CSS         ", ".css"),
                       ("ERB         ", ".erb"),
                       ("Go          ", ".go"),
@@ -151,6 +164,7 @@ languages = zipWith3 concat3 x (repeat "\t") y
                       ("HTML        ", ".html .htm .xhtml"),
                       ("Java        ", ".java"),
                       ("JavaScript  ", ".js"),
+                      ("Lisp        ", ".lisp"),
                       ("MatLab      ", ".matlab"),
                       ("PHP         ", ".php"),
                       ("Python      ", ".py"),
@@ -178,4 +192,4 @@ concat3 x y z = x ++ y ++ z
 -- Returns the current version number.
 version :: IO ()
 
-version = putStrLn "v1.0.1"
+version = putStrLn "v1.0.2"

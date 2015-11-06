@@ -1,3 +1,4 @@
 author:run 'comet author NAME' to change this setting.
 comment-width:80
+date-format:dd/mm/yyyy
 license:MIT

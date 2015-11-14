@@ -3,7 +3,7 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 18/10/2015
+    Last Modified: 14/11/2015
 -}
 
 module Config (configName, readValue, writeValue) where
@@ -15,11 +15,13 @@ module Config (configName, readValue, writeValue) where
     import Paths_comet
     import System.Directory
     import System.IO
+    import qualified System.IO.Strict as SIO
 
     -- Some type synoyms to make types easier to read.
     type Key      = String
     type Value    = String
     type FileName = String
+
 
     -- Name of our config file.
     configName :: FileName
@@ -32,10 +34,13 @@ module Config (configName, readValue, writeValue) where
 
     readValue key = do
         path     <- getDataFileName configName
-        contents <- lines <$> readFile path
+        handle   <- openFile path ReadMode
+        contents <- lines <$> SIO.hGetContents handle
 
         let f = filter (key `isPrefixOf`) contents
             v = (last . splitOn ":" . head) f
+
+        hClose handle
 
         return v
 

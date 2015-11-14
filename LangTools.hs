@@ -19,6 +19,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     type ComChar   = String
     type Extension = String
 
+
     -- Gets the string relating to the start of a block comment for the supported languages.
     getBlockStart :: Lang -> ComChar
 

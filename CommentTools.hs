@@ -5,31 +5,32 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 6/11/2015
+    Last Modified: 14/11/2015
 -}
 
 module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment) where
 
     -- Imports for things we will need.
     import Control.Applicative
-    import Data.List (isPrefixOf)
+    import Data.List (isPrefixOf, sortBy, elemIndex)
+    import Data.List.Split (splitOn)
     import Data.String.Utils (replace)
+    import Data.List (sort)
     import Data.Time.Calendar
     import Data.Time.Clock
     import System.Directory
     import System.IO
 
-    import qualified Config as C
+    import qualified Config     as C
+    import qualified FieldTools as F
     import LangTools
 
     -- Useful type synonyms.
-    type FileName = String
-    type Comment  = String
-    type Params   = [String]
-    type Line     = String
-    type Lines    = [Line]
-    type Field    = (String, String)
-    type Fields   = [Field]
+    type FileName        = String
+    type Comment         = String
+    type Params          = [String]
+    type Line            = String
+    type Lines           = [Line]
 
 
     -- Writes a comment to filename with the associated params.
@@ -39,7 +40,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
         let lang     = getLang fname
             content' = removeCommentBlock lang content
 
-        f     <- getFields params
+        f     <- F.getFields params
         block <- generateCommentBlock lang com f
 
         writeToFile fname $ block ++ content'
@@ -63,6 +64,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
 
     setComment fname com params = do
         content <- lines <$> readFile fname
+        
         write fname com content params
 
 
@@ -139,7 +141,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
 
 
     -- Generates the comment block to be added to the header of the file.
-    generateCommentBlock :: Lang -> Comment -> Fields -> IO Lines
+    generateCommentBlock :: Lang -> Comment -> [(String, String)] -> IO Lines
 
     generateCommentBlock lang com fields = do
         splitLines <- splitInput lang com
@@ -147,7 +149,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
 
 
     -- Creates a correctly formatted field block that will go in the comment block.
-    generateFieldBlock :: Lang -> Fields -> Lines
+    generateFieldBlock :: Lang -> [(String, String)] -> Lines
 
     generateFieldBlock _ []        = []
     generateFieldBlock lang fields = [""] ++ map (\a -> fst a ++ ":" ++ rep " " (s a) ++ snd a) fields
@@ -189,65 +191,3 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
             f acc x  = if (length . last) acc + length x < lim' then init acc ++ [last acc ++ " " ++ x] else acc ++ [x]
 
         return x
-
-
-    -- List of the fields that can be shown in the header.
-    fields :: [String]
-
-    fields = ["Author(s)", "License", "Last Modified"]
-
-
-    -- Turns the shorthand notation into the full version.
-    getFieldsFromParams :: [String] -> [String]
-
-    getFieldsFromParams p = map f p
-                        where f "-l"  = "License"
-                              f "-a"  = "Author(s)"
-                              f "-lm" = "Last Modified"
-                              f x     = error "No such parameter '" ++ x ++ "'."
-
-
-    -- Zips the possible parameters against their current value.
-    fieldify :: IO Fields
-
-    fieldify = do
-        a <- author
-        l <- license
-        d <- date
-        return $ zip fields [a, l, d]
-
-
-    -- Returns a list of fields that we want after filtering out ones not wanted.
-    getFields :: [String] -> IO Fields
-
-    getFields params = fieldify >>= (return . filter (\x -> not $ (fst x) `elem` (getFieldsFromParams params)))
-
-
-    -- Gets the value associated with the 'author' key in the config file.
-    author :: IO String
-
-    author = C.readValue "author"
-
-
-    -- Gets the value associated with the 'license' key in the config file.
-    license :: IO String
-
-    license = C.readValue "license"
-
-
-    -- Gets the value associated with the 'comment-width' key in the config file.
-    commentWidth :: IO String
-
-    commentWidth = C.readValue "comment-width"
-
-
-    -- Gets todays date in the format the user has specificied in the config file.
-    date :: IO String
-
-    date = do
-        ct      <- getCurrentTime
-        dformat <- C.readValue "date-format"
-
-        let f (y, m, d) = (replace "dd" (show d) . replace "mm" (show m) . replace "yy" ((drop 2 . show) y) . replace "yyyy" (show y)) dformat
-        
-        (return . f . toGregorian . utctDay) ct

@@ -9,6 +9,9 @@
 
 {-
     TODO: Get it so we use the current settings when appending and updating as opposed to simply using defaults everytime.
+          Get it to print overview of current directory.
+          Add force option where you can get the program can treat a file as another type.
+          Add auto recognise file ext.
 -}
 
 -- Imports
@@ -209,6 +212,7 @@ languages = T.genBlock "" 4 l
                       ("C"           , ".c .h"),
                       ("C++"         , ".cpp"),
                       ("CoffeeScript", ".coffee"),
+                      ("Common Lisp" , ".lisp"),
                       ("C#"          , ".cs"),
                       ("CSS"         , ".css"),
                       ("ERB"         , ".erb"),
@@ -220,13 +224,16 @@ languages = T.genBlock "" 4 l
                       ("JavaScript"  , ".js"),
                       ("Lisp"        , ".lisp"),
                       ("MatLab"      , ".matlab"),
+                      ("Perl"        , ".pl"),
                       ("PHP"         , ".php"),
                       ("Python"      , ".py"),
                       ("R"           , ".r"),
                       ("Ruby"        , ".rb"),
                       ("Scala"       , ".scala"),
+                      ("Scheme"      , ".scm .ss"),
                       ("SASS"        , ".sass"),
                       ("SCSS"        , ".scss"),
+                      ("Swift"       , ".swift"),
                       ("XML"         , ".xml")]
 
 

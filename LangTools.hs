@@ -12,7 +12,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     import Data.List.Split
 
     -- Data type composed of the supported languages.
-    data Lang = Arduino | C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | Lisp | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
+    data Lang = Arduino | C | CLisp | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | MatLab | Perl | PHP | Python | R | Ruby | Scala | Scheme | SASS | SCSS | Swift | XML deriving (Eq, Show)
 
     -- Useful type synonyms.
     type FileName      = String
@@ -23,31 +23,31 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     -- Gets the string relating to the start of a block comment for the supported languages.
     getBlockStart :: Lang -> CommentSymbol
 
-    getBlockStart l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = "/*"
-                    | l `elem` [ERB, HTML, XML]                                                             = "<!--"
-                    | l `elem` [Haskell]                                                                    = "{-"
-                    | l `elem` [MatLab]                                                                     = "%{"
-                    | otherwise                                                                             = getCommentChar l
+    getBlockStart l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SASS, SCSS, Swift] = "/*"
+                    | l `elem` [ERB, HTML, XML]                                                                    = "<!--"
+                    | l `elem` [Haskell]                                                                           = "{-"
+                    | l `elem` [MatLab]                                                                            = "%{"
+                    | otherwise                                                                                    = getCommentChar l
 
 
     -- Gets the string relating to the end of a block comment for the supported languages.
     getBlockEnd :: Lang -> CommentSymbol
 
-    getBlockEnd l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " */"
-                  | l `elem` [ERB, HTML, XML]                                                             = "-->"
-                  | l `elem` [Haskell]                                                                    = "-}"
-                  | l `elem` [MatLab]                                                                     = "%}"
-                  | otherwise                                                                             = getCommentChar l
+    getBlockEnd l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SASS, SCSS, Swift] = " */"
+                  | l `elem` [ERB, HTML, XML]                                                                    = "-->"
+                  | l `elem` [Haskell]                                                                           = "-}"
+                  | l `elem` [MatLab]                                                                            = "%}"
+                  | otherwise                                                                                    = getCommentChar l
 
 
     -- Gets the string relating to the start of each comment line within a block comment.
     getCommentChar :: Lang -> CommentSymbol
 
-    getCommentChar l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
-                     | l `elem` [CoffeeScript, Python, R, Ruby]                                              = "# "
-                     | l `elem` [HAML]                                                                       = "-# "
-                     | l `elem` [Lisp]                                                                       = ";;; "
-                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                            = "    "
+    getCommentChar l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SASS, SCSS, Swift] = " * "
+                     | l `elem` [CoffeeScript, Python, Perl, R, Ruby]                                               = "# "
+                     | l `elem` [HAML]                                                                              = "-# "
+                     | l `elem` [CLisp, Scheme]                                                                     = ";;; "
+                     | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                                   = "    "
 
 
     -- Gets the language from the file extension.
@@ -57,6 +57,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
               | suf == ".pde"    = Arduino
               | suf == ".c"      = C
               | suf == ".h"      = C
+              | suf == ".lisp"   = CLisp
               | suf == ".cpp"    = CPP
               | suf == ".coffee" = CoffeeScript
               | suf == ".cs"     = CSharp
@@ -68,7 +69,6 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
               | suf == ".html"   = HTML
               | suf == ".htm"    = HTML
               | suf == ".xhtml"  = HTML
-              | suf == ".lisp"   = Lisp
               | suf == ".java"   = Java
               | suf == ".js"     = JavaScript
               | suf == ".matlab" = MatLab
@@ -77,6 +77,9 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
               | suf == ".r"      = R
               | suf == ".rb"     = Ruby
               | suf == ".scala"  = Scala
+              | suf == ".scm"    = Scheme
+              | suf == ".ss"     = Scheme
+              | suf == ".swift"  = Swift
               | suf == ".sass"   = SASS
               | suf == ".scss"   = SCSS
               | suf == ".xml"    = XML

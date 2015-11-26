@@ -15,13 +15,13 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     data Lang = Arduino | C | CPP | CoffeeScript | CSharp | CSS | ERB | Go | HAML | Haskell | HTML | Java | JavaScript | Lisp | MatLab | PHP | Python | R | Ruby | Scala | SASS | SCSS | XML deriving (Eq, Show)
 
     -- Useful type synonyms.
-    type FileName  = String
-    type ComChar   = String
-    type Extension = String
+    type FileName      = String
+    type CommentSymbol = String
+    type Extension     = String
 
 
     -- Gets the string relating to the start of a block comment for the supported languages.
-    getBlockStart :: Lang -> ComChar
+    getBlockStart :: Lang -> CommentSymbol
 
     getBlockStart l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = "/*"
                     | l `elem` [ERB, HTML, XML]                                                             = "<!--"
@@ -31,7 +31,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
 
 
     -- Gets the string relating to the end of a block comment for the supported languages.
-    getBlockEnd :: Lang -> ComChar
+    getBlockEnd :: Lang -> CommentSymbol
 
     getBlockEnd l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " */"
                   | l `elem` [ERB, HTML, XML]                                                             = "-->"
@@ -41,7 +41,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
 
 
     -- Gets the string relating to the start of each comment line within a block comment.
-    getCommentChar :: Lang -> ComChar
+    getCommentChar :: Lang -> CommentSymbol
 
     getCommentChar l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SCSS, SASS] = " * "
                      | l `elem` [CoffeeScript, Python, R, Ruby]                                              = "# "

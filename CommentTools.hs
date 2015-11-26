@@ -8,7 +8,7 @@
     Last Modified: 14/11/2015
 -}
 
-module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment) where
+module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment, genBlock) where
 
     -- Imports for things we will need.
     import Control.Applicative
@@ -119,7 +119,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     -- Gets the comment block if it exists.
     getCommentBlock :: Lang -> Lines -> Lines
 
-    getCommentBlock lang content = if head content /= getBlockStart lang then error "No comment block found. Run 'comet' for a list of legal commands." else takeWhile (isInCommentBlock lang) content
+    getCommentBlock lang content = if (not . hasCommentBlock lang) content then error "No comment block found. Run 'comet' for a list of legal commands." else takeWhile (isInCommentBlock lang) content
 
 
     -- Checks to see if the given line begin with a comment lies within a comment block.
@@ -131,7 +131,12 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     -- Gets a the comment from a bunch of lines making up the file.
     getComment :: Lang -> Lines -> Comment
 
-    getComment lang content = if head content /= getBlockStart lang then error "No comment found. Run 'comet' for a list of legal commands." else (unlines . map (strip lang) . takeWhile (\x -> (trim . strip lang) x /= "" && trim x /= getBlockEnd lang)) $ tail content
+    getComment lang content = if (not . hasCommentBlock lang) content then error "No comment found. Run 'comet' for a list of legal commands." else (unlines . map (strip lang) . takeWhile (\x -> (trim . strip lang) x /= "" && trim x /= getBlockEnd lang)) $ tail content
+
+
+    hasCommentBlock :: Lang -> Lines -> Bool
+
+    hasCommentBlock l c = head c == getBlockStart l
 
 
     -- Adds a comment character to the start of a string needing commenting.
@@ -145,17 +150,15 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
 
     generateCommentBlock lang com fields = do
         splitLines <- splitInput lang com
-        return $ [getBlockStart lang] ++ map (comment lang) splitLines ++ map (comment lang) (generateFieldBlock lang fields) ++ [getBlockEnd lang]
+        return $ [getBlockStart lang] ++ map (comment lang) splitLines ++ map (comment lang) (genBlock ":" 1 fields) ++ [getBlockEnd lang]
 
 
-    -- Creates a correctly formatted field block that will go in the comment block.
-    generateFieldBlock :: Lang -> [(String, String)] -> Lines
+    genBlock :: String -> Int -> [(String, String)] -> Lines
 
-    generateFieldBlock _ []        = []
-    generateFieldBlock lang fields = [""] ++ map (\a -> fst a ++ ":" ++ rep " " (s a) ++ snd a) fields
+    genBlock c n pairs = [""] ++ map (\a -> fst a ++ c ++ rep " " (s a) ++ snd a) pairs
                                      where mlen = foldl max 0 len
-                                           len  = map (succ . length . fst) fields
-                                           s y  = mlen - ((length . fst) y)
+                                           len  = map (length . fst) pairs
+                                           s y  = n + mlen - ((length . fst) y)
 
 
     -- Replicates a string an amount of times.

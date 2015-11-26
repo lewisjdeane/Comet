@@ -20,7 +20,7 @@ module FieldTools (getFields) where
 
     data Field = Author | License | LastModified | Maintainer deriving (Show, Eq)
     data State = Visible | Hidden | Custom String deriving (Show, Eq)
-    data FieldState = FieldState { field :: Field, state :: State } deriving Show
+    data FieldState = FieldState { field :: Field, state :: State } deriving (Show)
 
     type Params = [String]
 
@@ -79,7 +79,7 @@ module FieldTools (getFields) where
                  | x == Maintainer   = maintainer
                  | x == License      = license
                  | x == LastModified = date
-                 | otherwise = error "No such field."
+                 | otherwise         = error "No such field."
 
 
     -- Define what title we want respective fields to have.
@@ -89,7 +89,7 @@ module FieldTools (getFields) where
                  | x == Maintainer   = "Maintainer(s)"
                  | x == License      = "License"
                  | x == LastModified = "Last Modified"
-                 | otherwise = error "No such field."
+                 | otherwise         = error "No such field."
      
 
     -- Gets the default fields.
@@ -148,6 +148,7 @@ module FieldTools (getFields) where
     author = C.readValue "author"
 
 
+    -- Gets the value associated with the 'maintainer' key in the config file.
     maintainer :: IO String
 
     maintainer = C.readValue "maintainer"

@@ -50,9 +50,12 @@ module Config (configName, readValue, writeValue) where
     
     writeValue (key, value) = do
         path     <- getDataFileName configName
-        contents <- lines <$> readFile path
+        handle   <- openFile path ReadMode
+        contents <- lines <$> SIO.hGetContents handle
 
         let f x = if key `isPrefixOf` x then key ++ ":" ++ value else x
             c = map f contents
 
-        length contents `seq` (writeFile path $ unlines c)
+        hClose handle
+        
+        writeFile path $ unlines c

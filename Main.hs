@@ -7,10 +7,15 @@
     Last Modified: 14/11/2015
 -}
 
+{-
+    TODO: Get it so we use the current settings when appending and updating as opposed to simply using defaults everytime.
+-}
+
 -- Imports
 import Control.Applicative
 import Data.List (delete, intercalate, isPrefixOf)
 import Data.List.Split (splitOn)
+import Paths_comet
 import System.Environment
 import System.Directory
 import System.IO
@@ -41,8 +46,11 @@ parse :: [String] -> IO ()
 
 parse [] = doc
 
-parse ["v"]       = version
-parse ["version"] = version
+parse ["v"]       = printVersion
+parse ["version"] = printVersion
+
+parse ["ls"]            = printSettings
+parse ["list-settings"] = printSettings
 
 parse ["author"]         = configG "author"
 parse ["comment-width"]  = configG "comment-width"
@@ -55,8 +63,8 @@ parse ["author", x]         = configS "author"        x
 parse ["comment-width", x]  = configS "comment-width" x
 parse ["date-format", x]    = if isLegalDateFormat x then configS "date-format" x else error $ x ++ " is not a valid date format."
 parse ["default-fields", x] = if isFieldShortcut $ tail x then configS' "default-fields" x else error $ tail x ++ " is not a valid field shortcut."
-parse ["license", x]        = configS "license"         x
-parse ["maintainer", x]     = configS "maintainer"      x     
+parse ["license", x]        = configS "license"    x
+parse ["maintainer", x]     = configS "maintainer" x     
 
 parse ["g", x]   = T.currentComment x
 parse ["get", x] = T.currentComment x
@@ -76,6 +84,7 @@ parse ("append" :x:y:xs) = T.appendComment x y xs
 parse _ = putStrLn usage
 
 
+-- Checks if the passed symbol is a shortcut for a setting.
 isFieldShortcut :: String -> Bool
 
 isFieldShortcut x | x == "a"  = True
@@ -126,7 +135,7 @@ configS' k v = do
                             else values
         new' = intercalate "," new
 
-    length new' `seq` (configS k new')
+    configS k new'
 
 
 -- Gets the current setting from confifg.
@@ -148,47 +157,43 @@ doc = (putStrLn . unlines) $ [prettyPrint "---- USAGE ----"] ++ commands ++ [pre
 
 
 -- List of commands to be outputted when 'comet' is run.
-
-commands = zipWith3 concat3 x (repeat "\t") y
-          where x = map fst c
-                y = map snd c 
-                c = [("COMMAND                    ", "DESCRIPTION"),
+commands = T.genBlock "" 4 c
+          where c = [("COMMAND"                    , "DESCRIPTION"),
                      ("comet s|set    FILE COMMENT", "Write comment to file."),
                      ("comet a|append FILE COMMENT", "Append comment to file."),
-                     ("comet d|delete FILE        ", "Delete comment from file."),
-                     ("comet g|get    FILE        ", "Get comment block from file."),
-                     ("comet u|update FILE        ", "Updates file with current settings."),
-                     ("comet v|version            ", "Get current version."),
-                     ("comet author               ", "Get author."),
-                     ("comet author NAME          ", "Set author to name."),
-                     ("comet comment-width        ", "Get comment width."),
-                     ("comet comment-width NUM    ", "Set comment width to num."),
-                     ("comet date-format          ", "Get date format."),
-                     ("comet date-format PATTERN  ", "Set date format to pattern."),
-                     ("comet default-fields       ", "Get default-fields."),
-                     ("comet default-fields +l    ", "Add license to default-fields."),
-                     ("comet default-fields -m    ", "Remove maintainer from default-fields."),
-                     ("comet license              ", "Get license."),
-                     ("comet license NAME         ", "Set license to name."),
-                     ("comet maintainer           ", "Get maintainer."),
-                     ("comet maintainer PATTERN   ", "Set maintainer to name.")]
+                     ("comet d|delete FILE"        , "Delete comment from file."),
+                     ("comet g|get    FILE"        , "Get comment block from file."),
+                     ("comet u|update FILE"        , "Updates file with current settings."),
+                     ("comet v|version"            , "Get current version."),
+                     ("comet ls|list-settings"     , "List settings with values."),
+                     ("comet author"               , "Get author."),
+                     ("comet author NAME"          , "Set author to name."),
+                     ("comet comment-width"        , "Get comment width."),
+                     ("comet comment-width NUM"    , "Set comment width to num."),
+                     ("comet date-format"          , "Get date format."),
+                     ("comet date-format PATTERN"  , "Set date format to pattern."),
+                     ("comet default-fields"       , "Get default-fields."),
+                     ("comet default-fields +l"    , "Add license to default-fields."),
+                     ("comet default-fields -m"    , "Remove maintainer from default-fields."),
+                     ("comet license"              , "Get license."),
+                     ("comet license NAME"         , "Set license to name."),
+                     ("comet maintainer"           , "Get maintainer."),
+                     ("comet maintainer PATTERN"   , "Set maintainer to name.")]
  
 
 -- Explains what the parameters mean.
 parameters :: [String]
 
-parameters = zipWith3 concat3 x (repeat "\t") y
-            where x = map fst c
-                  y = map snd c
-                  c = [("PARAMETER", "ACTION"),
-                       ("-a       ", "Hide author field."),
-                       ("-l       ", "Hide license field."),
-                       ("-lm      ", "Hide last modified field."),
-                       ("-m       ", "Hide maintainer field."),
-                       ("+a       ", "Show author field."),
-                       ("+l       ", "Show license field."),
-                       ("+lm      ", "Show last modified field."),
-                       ("+m       ", "Show maintainer field."),
+parameters = T.genBlock "" 4 c
+            where c = [("PARAMETER", "ACTION"),
+                       ("-a"       , "Hide author field."),
+                       ("-l"       , "Hide license field."),
+                       ("-lm"      , "Hide last modified field."),
+                       ("-m"       , "Hide maintainer field."),
+                       ("+a"       , "Show author field."),
+                       ("+l"       , "Show license field."),
+                       ("+lm"      , "Show last modified field."),
+                       ("+m"       , "Show maintainer field."),
                        ("+a  VALUE", "Show and overwrite author field."),
                        ("+l  VALUE", "Show and overwrite license field."),
                        ("+lm VALUE", "Show and overwrite last modified field."),
@@ -198,49 +203,54 @@ parameters = zipWith3 concat3 x (repeat "\t") y
 -- Nicely formats allowed files and extensions.
 languages :: [String]
 
-languages = zipWith3 concat3 x (repeat "\t") y
-            where x = map fst l
-                  y = map snd l
-                  l = [("LANGUAGE   ", "FILE EXTENSION"),
-                      ("Arduino     ", ".pde .ino"),
-                      ("C           ", ".c .h"),
-                      ("C++         ", ".cpp"),
+languages = T.genBlock "" 4 l
+            where l = [("LANGUAGE"   , "FILE EXTENSION"),
+                      ("Arduino"     , ".pde .ino"),
+                      ("C"           , ".c .h"),
+                      ("C++"         , ".cpp"),
                       ("CoffeeScript", ".coffee"),
-                      ("C#          ", ".cs"),
-                      ("CSS         ", ".css"),
-                      ("ERB         ", ".erb"),
-                      ("Go          ", ".go"),
-                      ("HAML        ", ".haml"),
-                      ("Haskell     ", ".hs"),
-                      ("HTML        ", ".html .htm .xhtml"),
-                      ("Java        ", ".java"),
-                      ("JavaScript  ", ".js"),
-                      ("Lisp        ", ".lisp"),
-                      ("MatLab      ", ".matlab"),
-                      ("PHP         ", ".php"),
-                      ("Python      ", ".py"),
-                      ("R           ", ".r"),
-                      ("Ruby        ", ".rb"),
-                      ("Scala       ", ".scala"),
-                      ("SASS        ", ".sass"),
-                      ("SCSS        ", ".scss"),
-                      ("XML         ", ".xml")]
+                      ("C#"          , ".cs"),
+                      ("CSS"         , ".css"),
+                      ("ERB"         , ".erb"),
+                      ("Go"          , ".go"),
+                      ("HAML"        , ".haml"),
+                      ("Haskell"     , ".hs"),
+                      ("HTML"        , ".html .htm .xhtml"),
+                      ("Java"        , ".java"),
+                      ("JavaScript"  , ".js"),
+                      ("Lisp"        , ".lisp"),
+                      ("MatLab"      , ".matlab"),
+                      ("PHP"         , ".php"),
+                      ("Python"      , ".py"),
+                      ("R"           , ".r"),
+                      ("Ruby"        , ".rb"),
+                      ("Scala"       , ".scala"),
+                      ("SASS"        , ".sass"),
+                      ("SCSS"        , ".scss"),
+                      ("XML"         , ".xml")]
 
 
+-- List of example usages to be printed.
 examples :: [String]
+
 examples = ["comet g Main.hs            -> Get the comment block from Main.hs.",
             "comet s Main.hs 'Hello' -l -> Set 'hello' as comment and hide the license field.",
             "comet delete Main.hs       -> Removes the comment block from Main.hs.",
             "comet author 'Mark Twain'  -> Set current author to 'Mark Twain'."]
 
 
--- Joins three strings together.
-concat3 :: String -> String -> String -> String
-
-concat3 x y z = x ++ y ++ z
-
-
 -- Returns the current version number.
-version :: IO ()
+printVersion :: IO ()
 
-version = putStrLn "v1.1.0"
+printVersion = putStrLn "v1.1.0"
+
+
+-- Prints a formatted block containing settings and their current values.
+printSettings :: IO ()
+
+printSettings = do
+    path    <- getDataFileName "config.txt"
+    content <- lines <$> readFile path
+
+    (putStrLn . unlines . T.genBlock ":" 1 . map (\x -> let a = splitOn ":" x in (head a, last a))) content
+    

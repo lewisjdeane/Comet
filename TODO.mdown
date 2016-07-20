@@ -1,0 +1,17 @@
+todo --write --no-context +f .hs
+
+### Main.hs ###
+
+   > TODO Get it so we use the current settings when appending and updating as opposed to simply using defaults everytime.
+
+   > TODO Get it to print overview of current directory.
+
+   > TODO Add force option where you can get the program can treat a file as another type.
+
+   > TODO Add auto recognise file ext.
+
+   > TODO Stop functions returning 'IO ()', only print to command line when necessary and don't throw errors in functions that may be used by functions outside of the primary usage.
+
+   > TODO Allow 'comet update' to take multiple files.
+
+   > TODO Rewrite parsing logic so doesn't matter what order arguments are passed.

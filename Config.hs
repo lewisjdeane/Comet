@@ -3,7 +3,7 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 14/11/2015
+    Last Modified: 20/7/2016
 -}
 
 module Config (configName, readValue, writeValue) where
@@ -54,7 +54,7 @@ module Config (configName, readValue, writeValue) where
         contents <- lines <$> SIO.hGetContents handle
 
         let f x = if key `isPrefixOf` x then key ++ ":" ++ value else x
-            c = map f contents
+            c   = map f contents
 
         hClose handle
         

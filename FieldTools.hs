@@ -4,22 +4,22 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 14/11/2015
+    Last Modified: 20/7/2016
 -}
 
 module FieldTools (getFields) where
 
     import Control.Applicative
-    import Data.List (isPrefixOf, sortBy, elemIndex)
-    import Data.List.Split (splitOn)
-    import Data.String.Utils (replace)
+    import Data.List           (isPrefixOf, sortBy, elemIndex)
+    import Data.List.Split     (splitOn)
+    import Data.String.Utils   (replace)
     import Data.Time.Calendar
     import Data.Time.Clock
 
     import qualified Config as C
 
-    data Field = Author | License | LastModified | Maintainer deriving (Show, Eq)
-    data State = Visible | Hidden | Custom String deriving (Show, Eq)
+    data Field      = Author | Documentation | Email | License | LastModified | Maintainer | Website deriving (Show, Eq)
+    data State      = Visible | Hidden | Custom String deriving (Show, Eq)
     data FieldState = FieldState { field :: Field, state :: State } deriving (Show)
 
     type Params = [String]
@@ -28,7 +28,7 @@ module FieldTools (getFields) where
     -- Define the order in which we want the various fields to appear in.
     fieldOrder :: [Field]
 
-    fieldOrder = [Author, Maintainer, License, LastModified]
+    fieldOrder = [Author, Maintainer, Email, Website, License, Documentation, LastModified]
 
 
     -- Sort the field order by the order in which we defined above.
@@ -75,21 +75,27 @@ module FieldTools (getFields) where
     -- Define what value we want respective fields to take.
     fieldValue :: Field -> IO String
 
-    fieldValue x | x == Author       = author
-                 | x == Maintainer   = maintainer
-                 | x == License      = license
-                 | x == LastModified = date
-                 | otherwise         = error "No such field."
+    fieldValue x | x == Author        = author
+                 | x == Documentation = doc
+                 | x == Email         = email
+                 | x == Maintainer    = maintainer
+                 | x == License       = license
+                 | x == LastModified  = date
+                 | x == Website       = website
+                 | otherwise          = error "No such field."
 
 
     -- Define what title we want respective fields to have.
     fieldTitle :: Field -> String
 
-    fieldTitle x | x == Author       = "Author(s)"
-                 | x == Maintainer   = "Maintainer(s)"
-                 | x == License      = "License"
-                 | x == LastModified = "Last Modified"
-                 | otherwise         = error "No such field."
+    fieldTitle x | x == Author        = "Author(s)"
+                 | x == Documentation = "Documentation"
+                 | x == Email         = "Email"
+                 | x == Maintainer    = "Maintainer(s)"
+                 | x == License       = "License"
+                 | x == LastModified  = "Last Modified"
+                 | x == Website       = "Website"
+                 | otherwise          = error "No such field."
      
 
     -- Gets the default fields.
@@ -102,9 +108,12 @@ module FieldTools (getFields) where
     getFieldFromShortcut :: String -> Field
 
     getFieldFromShortcut x | x == "a"  = Author
+                           | x == "d"  = Documentation
+                           | x == "e"  = Email
                            | x == "m"  = Maintainer
                            | x == "l"  = License
                            | x == "lm" = LastModified
+                           | x == "w"  = Website
                            | otherwise = error $ x ++ " is not a valid field."
 
 
@@ -148,6 +157,18 @@ module FieldTools (getFields) where
     author = C.readValue "author"
 
 
+    -- Gets the value associated with the 'documentation' key in the config file.
+    doc :: IO String
+
+    doc = C.readValue "doc"
+
+
+    -- Gets the value associated with the 'email' key in the config file.
+    email :: IO String
+
+    email = C.readValue "email"
+
+
     -- Gets the value associated with the 'maintainer' key in the config file.
     maintainer :: IO String
 
@@ -158,6 +179,12 @@ module FieldTools (getFields) where
     license :: IO String
 
     license = C.readValue "license"
+
+
+    -- Gets the value associated with the 'website' key in the config file.
+    website :: IO String
+
+    website = C.readValue "website"
 
 
     -- Gets the value associated with the 'comment-width' key in the config file.

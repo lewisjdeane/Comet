@@ -3,7 +3,7 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 18/10/2015
+    Last Modified: 20/7/2016
 -}
 
 module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) where
@@ -46,7 +46,7 @@ module LangTools (Lang, getLang, getBlockStart, getCommentChar, getBlockEnd) whe
     getCommentChar l | l `elem` [Arduino, C, CPP, CSharp, CSS, Go, Java, JavaScript, PHP, Scala, SASS, SCSS, Swift] = " * "
                      | l `elem` [CoffeeScript, Python, Perl, R, Ruby]                                               = "# "
                      | l `elem` [HAML]                                                                              = "-# "
-                     | l `elem` [CLisp, Scheme]                                                                     = ";;; "
+                     | l `elem` [CLisp, Scheme]                                                                     = ";;;; "
                      | l `elem` [ERB, Haskell, HTML, MatLab, XML]                                                   = "    "
 
 

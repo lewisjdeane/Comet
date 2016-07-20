@@ -2,5 +2,8 @@ author:run 'comet author NAME' to change this setting.
 comment-width:80
 date-format:dd/mm/yyyy
 default-fields:a,l,lm
+doc:run 'comet doc DOC' to change this setting.
 maintainer:run 'comet maintainer NAME' to change this setting.
 license:MIT
+email:run 'comet email EMAIL' to change this setting.
+website:run 'comet website URL' to change this setting.

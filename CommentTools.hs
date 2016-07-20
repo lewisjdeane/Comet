@@ -5,17 +5,17 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 14/11/2015
+    Last Modified: 20/7/2016
 -}
 
 module CommentTools (setComment, appendComment, updateComment, deleteComment, currentComment, genBlock) where
 
     -- Imports for things we will need.
     import Control.Applicative
-    import Data.List (isPrefixOf, sortBy, elemIndex)
-    import Data.List.Split (splitOn)
-    import Data.String.Utils (replace)
-    import Data.List (sort)
+    import Data.List           (isPrefixOf, sortBy, elemIndex)
+    import Data.List.Split     (splitOn)
+    import Data.String.Utils   (replace)
+    import Data.List           (sort)
     import Data.Time.Calendar
     import Data.Time.Clock
     import System.Directory
@@ -26,11 +26,11 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     import LangTools
 
     -- Useful type synonyms.
-    type FileName        = String
-    type Comment         = String
-    type Params          = [String]
-    type Line            = String
-    type Lines           = [Line]
+    type FileName = String
+    type Comment  = String
+    type Params   = [String]
+    type Line     = String
+    type Lines    = [Line]
 
 
     -- Writes a comment to filename with the associated params.
@@ -128,7 +128,7 @@ module CommentTools (setComment, appendComment, updateComment, deleteComment, cu
     isInCommentBlock lang line = any (`isPrefixOf` line) [getBlockStart lang, getCommentChar lang, getBlockEnd lang]
 
 
-    -- Gets a the comment from a bunch of lines making up the file.
+    -- Gets the comment from a bunch of lines making up the file.
     getComment :: Lang -> Lines -> Comment
 
     getComment lang content = if (not . hasCommentBlock lang) content then error "No comment found. Run 'comet' for a list of legal commands." else (unlines . map (strip lang) . takeWhile (\x -> (trim . strip lang) x /= "" && trim x /= getBlockEnd lang)) $ tail content

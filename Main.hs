@@ -4,20 +4,22 @@
     
     Author(s):     Lewis Deane
     License:       MIT
-    Last Modified: 14/11/2015
+    Last Modified: 20/7/2016
 -}
 
 {-
-    TODO: Get it so we use the current settings when appending and updating as opposed to simply using defaults everytime.
-          Get it to print overview of current directory.
-          Add force option where you can get the program can treat a file as another type.
-          Add auto recognise file ext.
+    TODO Get it so we use the current settings when appending and updating as opposed to simply using defaults everytime.
+    TODO Get it to print overview of current directory.
+    TODO Add force option where you can get the program can treat a file as another type.
+    TODO Add auto recognise file ext.
+    TODO Stop functions returning 'IO ()', only print to command line when necessary and don't throw errors in functions that may be used by functions outside of the primary usage.
+    TODO Allow 'comet update' to take multiple files.
+    TODO Rewrite parsing logic so doesn't matter what order arguments are passed.
 -}
 
--- Imports
 import Control.Applicative
-import Data.List (delete, intercalate, isPrefixOf)
-import Data.List.Split (splitOn)
+import Data.List           (delete, intercalate, isPrefixOf)
+import Data.List.Split     (splitOn)
 import Paths_comet
 import System.Environment
 import System.Directory
@@ -41,7 +43,7 @@ main = getArgs >>= parse
 -- Allowable settings.
 settings :: [String]
 
-settings = ["author", "comment-width", "date-format", "license", "maintainer", "default-fields"]
+settings = ["author", "comment-width", "date-format", "doc", "license", "maintainer", "default-fields", "website", "email"]
 
 
 -- Parses the input from the command line and handles what should be done.
@@ -59,15 +61,21 @@ parse ["author"]         = configG "author"
 parse ["comment-width"]  = configG "comment-width"
 parse ["date-format"]    = configG "date-format"
 parse ["default-fields"] = configG "default-fields"
+parse ["doc"]            = configG "doc"
+parse ["email"]          = configG "email"
 parse ["license"]        = configG "license"
 parse ["maintainer"]     = configG "maintainer"
+parse ["website"]        = configG "website"
 
 parse ["author", x]         = configS "author"        x
 parse ["comment-width", x]  = configS "comment-width" x
+parse ["email", x]          = if isLegalEmail x then configS "email" x else error $ x ++ " is not a valid email address."
 parse ["date-format", x]    = if isLegalDateFormat x then configS "date-format" x else error $ x ++ " is not a valid date format."
 parse ["default-fields", x] = if isFieldShortcut $ tail x then configS' "default-fields" x else error $ tail x ++ " is not a valid field shortcut."
+parse ["doc", x]            = configS "doc"        x
 parse ["license", x]        = configS "license"    x
-parse ["maintainer", x]     = configS "maintainer" x     
+parse ["maintainer", x]     = configS "maintainer" x  
+parse ["website", x]        = configS "website"    x  
 
 parse ["g", x]   = T.currentComment x
 parse ["get", x] = T.currentComment x
@@ -91,9 +99,12 @@ parse _ = putStrLn usage
 isFieldShortcut :: String -> Bool
 
 isFieldShortcut x | x == "a"  = True
+                  | x == "d"  = True
+                  | x == "e"  = True
                   | x == "m"  = True
                   | x == "l"  = True
                   | x == "lm" = True
+                  | x == "w"  = True
                   | otherwise = False
 
 
@@ -107,6 +118,12 @@ isLegalDateFormat s | s =~ "(dd(/|-)mm(/|-)(yy|yyyy))" = True
                     | s =~ "((yy|yyyy)(/|-)dd(/|-)mm)" = True
                     | s =~ "((yy|yyyy)(/|-)mm(/|-)dd)" = True
                     | otherwise                        = False
+
+
+-- Do a Regex check to see if the passed string is a valid email, e.g. xxx@yyy.zzz
+isLegalEmail :: String -> Bool
+
+isLegalEmail x = x =~ "(.+@.+\\..+)"
 
 
 -- Provides a reusable string to be used after errors explaining what the user can do to get help.
@@ -156,7 +173,17 @@ prettyPrint s = "\n" ++ s ++ "\n"
 -- What should be printed out when no args are passed to our inital command.
 doc :: IO ()
 
-doc = (putStrLn . unlines) $ [prettyPrint "---- USAGE ----"] ++ commands ++ [prettyPrint "You can also pass parameters when setting, appending or updating."] ++ parameters ++ [prettyPrint "\n---- SUPPORTED LANGUAGES ----"] ++ languages ++ [prettyPrint "\n---- EXAMPLES ----"] ++ examples ++ [""]
+doc = (putStrLn . unlines) $ [prettyPrint "---- USAGE ----"]
+                             ++ commands
+                             ++ [prettyPrint "You can also pass parameters when setting, appending or updating."]
+                             ++ parameters
+                             ++ [prettyPrint "With the following valid shortcuts."]
+                             ++ validParams
+                             ++ [prettyPrint "\n---- SUPPORTED LANGUAGES ----"]
+                             ++ languages
+                             ++ [prettyPrint "\n---- EXAMPLES ----"]
+                             ++ examples
+                             ++ [""]
 
 
 -- List of commands to be outputted when 'comet' is run.
@@ -178,10 +205,16 @@ commands = T.genBlock "" 4 c
                      ("comet default-fields"       , "Get default-fields."),
                      ("comet default-fields +l"    , "Add license to default-fields."),
                      ("comet default-fields -m"    , "Remove maintainer from default-fields."),
+                     ("comet doc"                  , "Get doc."),
+                     ("comet doc DOC"              , "Set doc to DOC."),
+                     ("comet email"                , "Get email address."),
+                     ("comet email EMAIL"          , "Set email address to EMAIL."),
                      ("comet license"              , "Get license."),
                      ("comet license NAME"         , "Set license to name."),
                      ("comet maintainer"           , "Get maintainer."),
-                     ("comet maintainer PATTERN"   , "Set maintainer to name.")]
+                     ("comet maintainer PATTERN"   , "Set maintainer to name."),
+                     ("comet website"              , "Get website url."),
+                     ("comet website URL"          , "Set website url to URL.")]
  
 
 -- Explains what the parameters mean.
@@ -189,18 +222,22 @@ parameters :: [String]
 
 parameters = T.genBlock "" 4 c
             where c = [("PARAMETER", "ACTION"),
-                       ("-a"       , "Hide author field."),
-                       ("-l"       , "Hide license field."),
-                       ("-lm"      , "Hide last modified field."),
-                       ("-m"       , "Hide maintainer field."),
-                       ("+a"       , "Show author field."),
-                       ("+l"       , "Show license field."),
-                       ("+lm"      , "Show last modified field."),
-                       ("+m"       , "Show maintainer field."),
-                       ("+a  VALUE", "Show and overwrite author field."),
-                       ("+l  VALUE", "Show and overwrite license field."),
-                       ("+lm VALUE", "Show and overwrite last modified field."),
-                       ("+m  VALUE", "Show and overwrite maintainer field.")]
+                       ("-p"       , "Hide field associated with 'p'."),
+                       ("+p"       , "Show field associated with 'p'."),
+                       ("+p VALUE" , "Show field associated with 'p' with value VALUE.")]
+
+
+validParams :: [String]
+
+validParams = T.genBlock "" 4 c
+               where c = [("SHORTCUT", "PARAMETER"),
+                          ("a"       , "Author"),
+                          ("d"       , "Documentation"),
+                          ("e"       , "Email"),
+                          ("l"       , "License"),
+                          ("lm"      , "Last Modified"),
+                          ("m"       , "Maintainer"),
+                          ("w"       , "Website")]
 
 
 -- Nicely formats allowed files and extensions.
@@ -249,7 +286,7 @@ examples = ["comet g Main.hs            -> Get the comment block from Main.hs.",
 -- Returns the current version number.
 printVersion :: IO ()
 
-printVersion = putStrLn "v1.1.0"
+printVersion = putStrLn "v1.2.0"
 
 
 -- Prints a formatted block containing settings and their current values.
